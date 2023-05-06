@@ -33,9 +33,20 @@ class testgen:
             self.f.write(format(int("0b" + field3 + field2 + field1 + field0, 2), '04x') + "\n")
             field0 = format(int(field0, 2) + 1, '04b')
 
+    # init every register as 0 through addi
+    def init_random_sequence(self):
+        field3 = "0110"
+        field2 = "0000"
+        field1 = "0000"
+        field0 = "0000"
+        for i in range(16):
+            field1 = format(random.randint(0, 15), '04b')
+            self.f.write(format(int("0b" + field3 + field2 + field1 + field0, 2), '04x') + "\n")
+            field0 = format(int(field0, 2) + 1, '04b')
+
 def main(n: int = 100, outfile: str = "generated_test.txt"):
     testgenerator = testgen(outfile)
-    testgenerator.init_sequence()
+    testgenerator.init_random_sequence()
     for i in range(n):
         testgenerator.rand_instr()
 

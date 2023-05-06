@@ -6,14 +6,110 @@ class iss():
         self.infile = open(infile, "r")
         self.outfile = open(outfile, 'w')
         self.i_cache = []
-        self.d_cache = [2**16]
-        self.registers = [16]
+        self.d_cache = [0] * 2**16
+        self.registers = [0] * 16
         self.pc = 0
+        self.i_id = 0
 
     def load_program(self):
         for instr in self.infile:
             self.i_cache.append(instr)
 
+    # takes register names as hex str
+    def add_instr(self, r1: str, r2: str, rd: str):
+        self.registers[int(rd, 16)] = (self.registers[int(r1, 16)] + self.registers[int(r2, 16)]) % 2**16
+
+    # takes register names as hex str
+    def sub_instr(self, r1: str, r2: str, rd: str):
+        self.registers[int(rd, 16)] = (self.registers[int(r1, 16)] - self.registers[int(r2, 16)]) % 2**16
+
+    # takes register names as hex str
+    def and_instr(self, r1: str, r2: str, rd: str):
+        self.registers[int(rd, 16)] = self.registers[int(r1, 16)] & self.registers[int(r2, 16)]
+
+    # takes register names as hex str
+    def or_instr(self, r1: str, r2: str, rd: str):
+        self.registers[int(rd, 16)] = self.registers[int(r1, 16)] | self.registers[int(r2, 16)]
+    
+    # takes register names as hex str
+    def xor_instr(self, r1: str, r2: str, rd: str):
+        self.registers[int(rd, 16)] = self.registers[int(r1, 16)] ^ self.registers[int(r2, 16)]
+    
+    # takes register names as hex str
+    def mul_instr(self, r1: str, r2: str, rd: str):
+        product = self.registers[int(r1, 16)] * self.registers[int(r2, 16)]
+        if (product > 2**16 - 1):
+            self.registers[int(rd, 16)] = 2**16 - 1
+        else:
+            self.registers[int(rd, 16)] = product
+    
+    # takes register names as hex str
+    def addi_instr(self, r1: str, imm: str, rd: str):
+        self.registers[int(rd, 16)] = (self.registers[int(r1, 16)] + int(imm, 16)) % 2**16
+
+    # takes register names as hex str
+    def andi_instr(self, r1: str, imm: str, rd: str):
+        self.registers[int(rd, 16)] = self.registers[int(r1, 16)] & int(imm, 16)
+
+    # takes register names as hex str
+    def ori_instr(self, r1: str, imm: str, rd: str):
+        self.registers[int(rd, 16)] = self.registers[int(r1, 16)] | int(imm, 16)
+
+    # takes register names as hex str
+    def sll_instr(self, r1: str, imm: str, rd: str):
+        self.registers[int(rd, 16)] = (self.registers[int(r1, 16)] << int(imm, 16)) % 2**16
+
+    # takes register names as hex str
+    def srl_instr(self, r1: str, imm: str, rd: str):
+        self.registers[int(rd, 16)] = self.registers[int(r1, 16)] >> int(imm, 16)
+
+
+    def perform_instr(self, opcode: str, field2: str, field1: str, field0: str):
+        if opcode == "0":       #ADD
+            self.add_instr(field2, field1, field0)
+        elif opcode == "1":     #SUB
+            self.sub_instr(field2, field1, field0)
+        elif opcode == "2":     #AND
+            self.and_instr(field2, field1, field0)
+        elif opcode == "3":     #OR
+            self.or_instr(field2, field1, field0)
+        elif opcode == "4":     #XOR
+            self.xor_instr(field2, field1, field0)
+        elif opcode == "5":     #MUL
+            self.mul_instr(field2, field1, field0)
+        elif opcode == "6":     #ADDI
+            self.addi_instr(field2, field1, field0)
+        elif opcode == "7":     #ANDI
+            self.andi_instr(field2, field1, field0)
+        elif opcode == "8":     #ORI
+            self.ori_instr(field2, field1, field0)
+        elif opcode == "9":     #SLL
+            self.sll_instr(field2, field1, field0)
+        elif opcode == "a":     #SRL
+            self.srl_instr(field2, field1, field0)
+
+    def record_state(self):
+        for value in self.registers:
+            self.outfile.write(str(format(value, '04x')) + "\n")
 
     def step(self):
         curr_instr = self.i_cache[self.pc]
+        opcode = curr_instr[0]
+        self.perform_instr(opcode, curr_instr[1], curr_instr[2], curr_instr[3])
+        # print the instruction that was retired
+        self.outfile.write("\n" + curr_instr + str(self.pc) + "\n" + str(self.i_id) + "\n\n")
+        self.record_state()
+        self.i_id += 1
+        self.pc += 1    # NEED TO ADJUST THIS TO ACCOUNT FOR JUMPS
+
+    def not_done(self) -> bool:
+        return self.pc < len(self.i_cache)
+
+def main():
+    simulator = iss("../testgen/generated_test.txt", "iss_states.txt")
+    simulator.load_program()
+    while simulator.not_done():
+        simulator.step()
+
+if __name__ == "__main__":
+    main()
