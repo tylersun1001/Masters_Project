@@ -9,8 +9,12 @@ class Module():
         self.out_dict = {}
 
     # calculates the output dictionary based on the input dictionary.
-    # also runs internal logic within the module
-    # should only be called once a clock cycle.
-    def calculate_combinational():
+    def calculate_combinational(self):
         self.out_dict = self.out_dict
+
+    # updates the internal state of the module.
+    # should only be called once a clock cycle.
+    def update_state(self):
+        1 + 1
+
 
