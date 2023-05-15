@@ -19,7 +19,7 @@ class RegisterFile(Module):
 
     def __init__(self):
         super().__init__()
-        self.registers = [] * 16
+        self.registers = ["0000"] * 16
 
         self.in_dict["rd_1"] = "0"
         self.in_dict["rd_2"] = "0"
@@ -33,11 +33,13 @@ class RegisterFile(Module):
     def calculate_combinational(self):
         read1_index = Converter.hex2int(in_dict["rd_1"])
         read2_index = Converter.hex2int(in_dict["rd_2"])
-        write_index = Converter.hex2int(in_dict["wr"])
 
         self.out_dict["rd_1_data"] = self.registers[read1_index]
         self.out_dict["rd_2_data"] = self.registers[read2_index]
 
+    def update_state(self):
+        write_index = Converter.hex2int(in_dict["wr"])
+        
         if (self.in_dict["wr_en"] == "1"):
             self.registers[write_index] = self.in_dict["wr_data"]
 

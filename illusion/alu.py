@@ -20,7 +20,7 @@ class ALU(Module):
 
     def __init__(self):
         super().__init__()
-        self.mul_stage = 0
+        self.mul_stage = 0      #0 is done, 1 is second, 2 is first.
 
         self.in_dict["rs1_data"] = "0000"
         self.in_dict["rs2_data"] = "0000"
@@ -34,6 +34,7 @@ class ALU(Module):
         rs1_data = Convert.hex2int(self.in_dict["rs1_data"])
         rs2_data = Convert.hex2int(self.in_dict["rs2_data"])
         out_val = 0
+        mul_stage_val = 1
 
         self.out_dict["mul_stage"] = "1"
         if (opcode == "0" or opcode == "6"):        #ADD, ADDI
@@ -52,14 +53,19 @@ class ALU(Module):
             out_val = rs1_data >> rs2_data
         elif opcode == "5":                         #MUL
             out_val = 0
-            self.mul_stage += 1
-            if (mul_stage == 3):
+            mul_stage_val = (self.mul_stage - 1) % 3
+            if (self.mul_stage == 2):
                 product = rs1_data * rs2_data
                 if (product > (2**16 - 1)):
                     product = 2**16 - 1
                 out_val = product
-                self.mul_stage = 0
         
-        self.out_dict["mul_stage"] = Converter.int2hex(2 - self.mul_stage)
+        self.out_dict["mul_stage"] = Converter.int2hex(2** (mul_stage_val - 1))
         self.out_dict["out"] = Converter.int2hex(out_val, 4)
+
+        def update_state(self):
+            opcode = self.in_dict["instr"][0]
+
+            if opcode == "5":
+                self.mul_stage = (self.mul_stage - 1) % 3
 
