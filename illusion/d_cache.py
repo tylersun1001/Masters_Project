@@ -1,4 +1,4 @@
-# The registerfile module in the illusion python model.
+# The dcache module in the illusion python model.
 # The in{} dictionary contains the inputs.
 #   rd_dest:        [15:0]
 #   rd_en:          [0:0]
