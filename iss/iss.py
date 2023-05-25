@@ -96,6 +96,8 @@ class iss():
         curr_instr = self.i_cache[self.pc]
         opcode = curr_instr[0]
         self.perform_instr(opcode, curr_instr[1], curr_instr[2], curr_instr[3])
+        # HARDWIRE X0 to 0
+        self.registers[0] = 0
         # print the instruction that was retired
         self.outfile.write(curr_instr + str(self.pc) + "\n" + str(self.i_id) + "\n\n")
         self.record_state()

@@ -30,6 +30,7 @@ class Illusion(Module):
         self.id_instr = "0000"
         self.ex_instr = "0000"
         self.mem_instr = "0000"
+        self.wb_instr = "0000"
         self.mem_alu_out = "0000"
 
         self.comb_signals = {}
@@ -44,7 +45,8 @@ class Illusion(Module):
             self.update_comb_signals(self.comb_signals)
             
             #update the in signals in the modules/propogate combinational signals
-            #none right now?  will need to implement for forwarding.
+            
+            # Hazard Control
             self.modules["hc"].in_dict["id_rs1"] = self.id_instr[1]
             self.modules["hc"].in_dict["id_rs2"] = self.id_instr[2]
             self.modules["hc"].in_dict["ex_rd"] = self.ex_instr[3]
@@ -112,7 +114,7 @@ class Illusion(Module):
                 rd2 = self.id_instr[3]
             
             self.modules["rf"].in_dict["rd_1"] = rd1
-            self.modules["rf"].in_dict["rd_1"] = rd2
+            self.modules["rf"].in_dict["rd_2"] = rd2
             # wr, wr_data, wr_en are configured in wb stage above
 
         # IF Stage
@@ -135,16 +137,16 @@ class Illusion(Module):
     # in modules dict.
     def record_state(self):
         self.outfile.write("pc " + self.pc + "\n")
-        self.outfile.write("i_id" + self.i_id + "\n")
+        self.outfile.write("i_id " + self.i_id + "\n")
         for i in range(16):
             self.outfile.write("gpr " + self.modules["rf"].registers[i] + "\n")
 
         for signal_name in self.comb_signals.keys():
             self.outfile.write(signal_name + " " + self.comb_signals[signal_name] + "\n")
         self.outfile.write("\n")
-        # if a retirement is about to occur, record that.
+        # if a retirement is about to occur, record that and the instr to be retired.
         if (self.modules["rf"].in_dict["wr_en"] == "1"):
-            self.outfile.write("retirement\n")
+            self.outfile.write("retirement " + self.wb_instr + "\n")
 
 def main():
     illusion = Illusion()

@@ -42,4 +42,6 @@ class RegisterFile(Module):
         
         if (self.in_dict["wr_en"] == "1"):
             self.registers[write_index] = self.in_dict["wr_data"]
+            if (write_index == 0):
+                self.registers[write_index] = "0000"
 

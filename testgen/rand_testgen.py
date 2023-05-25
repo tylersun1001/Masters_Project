@@ -2,7 +2,11 @@
 
 # Currently only generates arithmetic operations.
 
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "lib"))
 import random
+from converter import Converter
 
 class testgen:
 
@@ -24,7 +28,7 @@ class testgen:
         self.f.write(hexinstr + "\n")
 
     # init every register as 0 through addi
-    def init_sequence(self):
+    def init_sequence_zeros(self):
         field3 = "0110"
         field2 = "0000"
         field1 = "0000"
@@ -33,7 +37,18 @@ class testgen:
             self.f.write(format(int("0b" + field3 + field2 + field1 + field0, 2), '04x') + "\n")
             field0 = format(int(field0, 2) + 1, '04b')
 
-    # init every register as 0 through addi
+    # init every register w/ their register name number through addi
+    def init_sequence(self):
+        field3 = "0110"
+        field2 = "0000"
+        field1 = "0000"
+        field0 = "0000"
+        for i in range(16):
+            self.f.write(format(int("0b" + field3 + field2 + field1 + field0, 2), '04x') + "\n")
+            field0 = format(int(field0, 2) + 1, '04b') 
+            field1 = field0       
+
+    # init every register randomly through addi
     def init_random_sequence(self):
         field3 = "0110"
         field2 = "0000"
@@ -46,7 +61,7 @@ class testgen:
 
 def main(n: int = 100, outfile: str = "generated_test.txt"):
     testgenerator = testgen(outfile)
-    testgenerator.init_random_sequence()
+    testgenerator.init_sequence()
     for i in range(n):
         testgenerator.rand_instr()
 
