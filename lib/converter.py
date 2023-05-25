@@ -8,9 +8,9 @@ class Converter():
     # converts an int to a hex str with length out_len
     # if out_len is 0 (default), then use min length.
     def int2hex(integer: int, out_len: int=0) -> str:
-        formatstr = ''
+        formatstr = '0'
         if (out_len > 0):
             formatstr += str(out_len)
         formatstr += 'x'
-        return format(int, formatstr)
+        return format(integer, formatstr)
 

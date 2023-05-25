@@ -11,10 +11,10 @@
 #                               010 = mul_second stage
 #                               100 = mul_first stage
 
-import Module
-import Converter
 import sys
 sys.path.insert(0, '../lib')
+from module import Module
+from converter import Converter
 
 class ALU(Module):
 
@@ -27,12 +27,14 @@ class ALU(Module):
         self.in_dict["instr"] = "0000"
 
         self.out_dict["out"] = "0000"
-        self.out_dict["mul_stage"] = "0"
+        self.out_dict["mul_stage"] = "1"
 
     def calculate_combinational(self):
         opcode = self.in_dict["instr"][0]
-        rs1_data = Convert.hex2int(self.in_dict["rs1_data"])
-        rs2_data = Convert.hex2int(self.in_dict["rs2_data"])
+        rs1_data = Converter.hex2int(self.in_dict["rs1_data"])
+        rs2_data = Converter.hex2int(self.in_dict["rs2_data"])
+        if (opcode in ["6", "7", "8", "9", "a", "b", "c", "d", "e", "f"]):
+            rs2_data = Converter.hex2int(self.in_dict["instr"][2])
         out_val = 0
         mul_stage_val = 1
 
@@ -60,7 +62,7 @@ class ALU(Module):
                     product = 2**16 - 1
                 out_val = product
         
-        self.out_dict["mul_stage"] = Converter.int2hex(2** (mul_stage_val - 1))
+        self.out_dict["mul_stage"] = Converter.int2hex(2** (mul_stage_val - 1), 1)
         self.out_dict["out"] = Converter.int2hex(out_val, 4)
 
         def update_state(self):
