@@ -31,13 +31,14 @@ class RegisterFile(Module):
         self.out_dict["rd_2_data"] = "0000"
 
     def calculate_combinational(self):
+        pass
+    
+    def update_state(self):
         read1_index = Converter.hex2int(self.in_dict["rd_1"])
         read2_index = Converter.hex2int(self.in_dict["rd_2"])
 
         self.out_dict["rd_1_data"] = self.registers[read1_index]
         self.out_dict["rd_2_data"] = self.registers[read2_index]
-
-    def update_state(self):
         write_index = Converter.hex2int(self.in_dict["wr"])
         
         if (self.in_dict["wr_en"] == "1"):

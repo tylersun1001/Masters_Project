@@ -15,19 +15,22 @@ class ICache(Module):
         self.data = ["0000"] * 2**16
         instrs = open(program, "r")
         for i, instr in enumerate(instrs):
-            self.data[i] = instr
+            self.data[i] = instr.strip()
 
-        self.curr_out = "0000"
+        #self.curr_out = "0000"
 
         self.in_dict["rd_dest"] = "0000"
 
         self.out_dict["rd_out"] = "0000"
 
     def calculate_combinational(self):
-        self.out_dict["rd_out"] = self.curr_out
+        #self.out_dict["rd_out"] = self.curr_out
+        rd_index = Converter.hex2int(self.in_dict["rd_dest"])
+        self.out_dict["rd_out"] = self.data[rd_index]
 
     def update_state(self):
-        rd_index = Converter.hex2int(self.in_dict["rd_dest"])
-        self.curr_out = self.data[rd_index]
+        pass
+        #rd_index = Converter.hex2int(self.in_dict["rd_dest"])
+        #self.curr_out = self.data[rd_index]
 
 

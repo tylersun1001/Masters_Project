@@ -26,12 +26,19 @@ class Illusion(Module):
         #Program counter will be implemented in this top level module.
 
         self.pc = "0000"
+        self.id_pc = "0000"
+        self.ex_pc = "0000"
+        self.mem_pc = "0000"
+        self.wb_pc = "0000"
+
         self.i_id = "0000"
         self.id_instr = "0000"
-        self.ex_instr = "0000"
+        self.m1_instr = "0000"
         self.mem_instr = "0000"
         self.wb_instr = "0000"
+
         self.mem_alu_out = "0000"
+        self.wb_alu_out = "0000"
 
         self.comb_signals = {}
         self.update_comb_signals(self.comb_signals)
@@ -45,12 +52,64 @@ class Illusion(Module):
             self.update_comb_signals(self.comb_signals)
             
             #update the in signals in the modules/propogate combinational signals
+
+            # IF
+            self.modules["icache"].in_dict["rd_dest"] = self.pc
+
+            # ID
+            id_opcode = self.id_instr[0]
+            rd1 = self.id_instr[1]
+            if (id_opcode == "e"):
+                rd1 = "0"
+            rd2 = "0"
+            if (id_opcode in ["0", "1", "2", "3", "4", "5"]):
+                rd2 = self.id_instr[2]
+            elif (id_opcode in ["c", "d"]):
+                rd2 = self.id_instr[3]
             
+            self.modules["rf"].in_dict["rd_1"] = rd1
+            self.modules["rf"].in_dict["rd_2"] = rd2
+            # wr, wr_data, wr_en are configured in wb stage above
+
+            # EX
+            self.modules["alu"].in_dict["rs1_data"] = self.modules["rf"].out_dict["rd_1_data"]
+            self.modules["alu"].in_dict["rs2_data"] = self.modules["rf"].out_dict["rd_2_data"]
+            self.modules["alu"].in_dict["instr"] = self.m1_instr
+
+            # MEM
+            # based on the current instr, determine what inputs to dcache should be
+            mem_opcode = self.mem_instr[0]
+            if (mem_opcode == "b"):
+                self.modules["dcache"].in_dict["rd_en"] = "1"
+                self.modules["dcache"].in_dict["rd_dest"] = self.mem_alu_out
+            elif (mem_opcode == "c"):
+                self.modules["dcache"].in_dict["wr_en"] = "1"
+                self.modules["dcache"].in_dict["wr_dest"] = self.mem_alu_out
+                self.modules["dcache"].in_dict["wr_data"] = self.mem_alu_out #FIXME: need to make this data@rs2.
+
+            # WB
+            # based on the instr, determine if alu_out, mem_out or nothing should be
+            # put back into the registerfile.
+            self.modules["rf"].in_dict["wr"] = self.wb_instr[3]
+            self.modules["rf"].in_dict["wr_en"] = "1"
+            wb_opcode = self.wb_instr[0]
+            if (wb_opcode == "b"):    #load instr => use dcache output
+                self.modules["rf"].in_dict["wr_data"] = self.modules["dcache"].out_dict["rd_out"]
+            else:           
+                self.modules["rf"].in_dict["wr_data"] = self.wb_alu_out #FIXME
+            if (wb_opcode in ["c", "d"]):       # store & beq do not wb into rf
+                self.modules["rf"].in_dict["wr_en"] = "0"
+
             # Hazard Control
             self.modules["hc"].in_dict["id_rs1"] = self.id_instr[1]
             self.modules["hc"].in_dict["id_rs2"] = self.id_instr[2]
-            self.modules["hc"].in_dict["ex_rd"] = self.ex_instr[3]
-            self.modules["hc"].in_dict["ex_mul_stage"] = self.modules["alu"].out_dict["mul_stage"]
+            self.modules["hc"].in_dict["ex_rd"] = self.m1_instr[3]
+            self.modules["hc"].in_dict["m1_instr"] = self.m1_instr
+            if (self.modules["alu"].out_dict["alu_status"] != "0" or self.m1_instr[0] == "5"):
+                self.modules["hc"].in_dict["ex_rd"] = self.modules["alu"].ex_instr[3]
+            self.modules["hc"].in_dict["mem_rd"] = self.mem_instr[3]
+            self.modules["hc"].in_dict["wb_rd"] = self.wb_instr[3]
+            self.modules["hc"].in_dict["alu_status"] = self.modules["alu"].out_dict["alu_status"]
 
             # run calculate_combinational on all modules
             for module_name in self.modules.keys():
@@ -66,61 +125,35 @@ class Illusion(Module):
 
         # WB Stage
         self.wb_instr = self.mem_instr
-        # based on the instr, determine if alu_out, mem_out or nothing should be
-        # put back into the registerfile.
-        self.modules["rf"].in_dict["wr"] = self.wb_instr[3]
-        self.modules["rf"].in_dict["wr_en"] = "1"
-        wb_opcode = self.wb_instr[0]
-        if (wb_opcode == "b"):    #load instr => use dcache output
-            self.modules["rf"].in_dict["wr_data"] = self.modules["dcache"].out_dict["rd_out"]
-        else:           
-            self.modules["rf"].in_dict["wr_data"] = self.mem_alu_out #FIXME
-        if (wb_opcode in ["c", "d"]):       # store & beq do not wb into rf
-            self.modules["rf"].in_dict["wr_en"] = "0"
+        self.wb_alu_out = self.mem_alu_out
+        self.wb_pc = self.mem_pc
 
         # MEM Stage
         # implement mem stall if needed (prob not)
         self.mem_alu_out = self.modules["alu"].out_dict["out"]
-        self.mem_instr = self.ex_instr
-        # based on the current instr, determine what inputs to dcache should be
-        mem_opcode = self.mem_instr[0]
-        if (mem_opcode == "b"):
-            self.modules["dcache"].in_dict["rd_en"] = "1"
-            self.modules["dcache"].in_dict["rd_dest"] = self.mem_alu_out
-        elif (mem_opcode == "c"):
-            self.modules["dcache"].in_dict["wr_en"] = "1"
-            self.modules["dcache"].in_dict["wr_dest"] = self.mem_alu_out
-            self.modules["dcache"].in_dict["wr_data"] = self.mem_alu_out #FIXME: need to make this data@rs2.
+        self.mem_instr = self.m1_instr
+        if (self.modules["alu"].out_dict["alu_status"] != "0" or self.m1_instr[0] == "5"):
+            self.mem_instr = self.modules["alu"].ex_instr
+        self.mem_pc = self.ex_pc
 
         # EX Stage
         if (self.modules["hc"].out_dict["id_ex_stall"] == "0"):
-            self.ex_instr = self.id_instr
-            self.modules["alu"].in_dict["rs1_data"] = self.modules["rf"].out_dict["rd_1_data"]
-            self.modules["alu"].in_dict["rs2_data"] = self.modules["rf"].out_dict["rd_2_data"]
-            self.modules["alu"].in_dict["instr"] = self.ex_instr
+            self.m1_instr = self.id_instr
+            self.ex_pc = self.id_pc
+        else:
+            # if there is a stall, then a nop should be inputted to alu.
+            self.m1_instr = "0000"
+        
 
         # ID Stage
         if (self.modules["hc"].out_dict["if_id_stall"] == "0"):
             # based on the instruction, feed rs1 and rs2 into rf
             self.id_instr = self.modules["icache"].out_dict["rd_out"]
-            id_opcode = self.id_instr[0]
-            rd1 = self.id_instr[1]
-            if (id_opcode == "e"):
-                rd1 = "0"
-            rd2 = "0"
-            if (id_opcode in ["0", "1", "2", "3", "4", "5"]):
-                rd2 = self.id_instr[2]
-            elif (id_opcode in ["c", "d"]):
-                rd2 = self.id_instr[3]
-            
-            self.modules["rf"].in_dict["rd_1"] = rd1
-            self.modules["rf"].in_dict["rd_2"] = rd2
-            # wr, wr_data, wr_en are configured in wb stage above
+            self.id_pc = self.pc
 
         # IF Stage
         if (self.modules["hc"].out_dict["if_id_stall"] == "0"):
             self.pc = Converter.int2hex(Converter.hex2int(self.pc) + 1, 4)
-            self.modules["icache"].in_dict["rd_dest"] = self.pc
 
         for module_name in self.modules.keys():
             self.modules[module_name].update_state() 
@@ -146,7 +179,7 @@ class Illusion(Module):
         self.outfile.write("\n")
         # if a retirement is about to occur, record that and the instr to be retired.
         if (self.modules["rf"].in_dict["wr_en"] == "1"):
-            self.outfile.write("retirement " + self.wb_instr + "\n")
+            self.outfile.write("retirement\npc= " + self.wb_pc + " instr= " + self.wb_instr + "\n")
 
 def main():
     illusion = Illusion()
