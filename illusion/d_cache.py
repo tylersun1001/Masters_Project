@@ -9,10 +9,10 @@
 # The out{} dictionary contains the combinational outputs.
 #   rd_out:         [15:0]
 
-import Module
-import Converter
 import sys
 sys.path.insert(0, '../lib')
+from module import Module
+from converter import Converter
 
 class DCache(Module):
 
@@ -33,8 +33,8 @@ class DCache(Module):
         self.out_dict["rd_out"] = self.curr_out
 
     def update_state(self):
-        rd_index = Converter.hex2int(in_dict["rd_dest"])
-        wr_index = Converter.hex2int(in_dict["wr_dest"])
+        rd_index = Converter.hex2int(self.in_dict["rd_dest"])
+        wr_index = Converter.hex2int(self.in_dict["wr_dest"])
 
         if self.in_dict["rd_en"] == "1":
             self.curr_out = self.data[rd_index]

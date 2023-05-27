@@ -10,10 +10,10 @@
 #   rd_1_data:    [15:0]
 #   rd_2_data:    [15:0]
 
-import Module
-import Converter
 import sys
 sys.path.insert(0, '../lib')
+from module import Module
+from converter import Converter
 
 class RegisterFile(Module):
 
@@ -31,15 +31,18 @@ class RegisterFile(Module):
         self.out_dict["rd_2_data"] = "0000"
 
     def calculate_combinational(self):
-        read1_index = Converter.hex2int(in_dict["rd_1"])
-        read2_index = Converter.hex2int(in_dict["rd_2"])
+        pass
+    
+    def update_state(self):
+        read1_index = Converter.hex2int(self.in_dict["rd_1"])
+        read2_index = Converter.hex2int(self.in_dict["rd_2"])
 
         self.out_dict["rd_1_data"] = self.registers[read1_index]
         self.out_dict["rd_2_data"] = self.registers[read2_index]
-
-    def update_state(self):
-        write_index = Converter.hex2int(in_dict["wr"])
+        write_index = Converter.hex2int(self.in_dict["wr"])
         
         if (self.in_dict["wr_en"] == "1"):
             self.registers[write_index] = self.in_dict["wr_data"]
+            if (write_index == 0):
+                self.registers[write_index] = "0000"
 

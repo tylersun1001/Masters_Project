@@ -15,6 +15,6 @@ class Module():
     # updates the internal state of the module.
     # should only be called once a clock cycle.
     def update_state(self):
-        1 + 1
+        pass
 
 
