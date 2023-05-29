@@ -133,8 +133,23 @@ module manta_style (
         wb_alu_out <= mem_alu_out;
     end
 
-    // DV Signals
+    // DV GPR Signals
     wire [15:0] gpr_0;
+    wire [15:0] gpr_1;
+    wire [15:0] gpr_2;
+    wire [15:0] gpr_3;
+    wire [15:0] gpr_4;
+    wire [15:0] gpr_5;
+    wire [15:0] gpr_6;
+    wire [15:0] gpr_7;
+    wire [15:0] gpr_8;
+    wire [15:0] gpr_9;
+    wire [15:0] gpr_10;
+    wire [15:0] gpr_11;
+    wire [15:0] gpr_12;
+    wire [15:0] gpr_13;
+    wire [15:0] gpr_14;
+    wire [15:0] gpr_15;
 
     assign gpr_0 = rf.gpr[0];
     assign gpr_1 = rf.gpr[1];
