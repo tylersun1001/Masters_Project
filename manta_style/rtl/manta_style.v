@@ -32,6 +32,7 @@ module manta_style (
     reg [15:0] mem_wr_data;
     reg        mem_wr_en;
     reg  [15:0] mem_alu_out;
+    reg [15:0] mem_r2_data;
 
     // WB
     reg [15:0] wb_instr;
@@ -99,11 +100,11 @@ module manta_style (
 
     d_cache dcache(
         .clk (clk),
-        .rd_dest (16'd0),
-        .rd_en (1'b0),
-        .wr_dest (16'd0),
-        .wr_data (16'd0),
-        .wr_en (1'b0),
+        .rd_dest (mem_rd_dest),
+        .rd_en (mem_rd_en),
+        .wr_dest (mem_wr_dest),
+        .wr_data (mem_wr_data),
+        .wr_en (mem_wr_en),
         .rd_out (wb_mem_out_wire)
     );
     
@@ -122,8 +123,20 @@ module manta_style (
         id_rs2 = (id_instr[15:12] < 4'h6 ? id_instr[7:4] : (id_instr[15:13] == 3'b110 ? id_instr[3:0] : 4'd0));
 
         id_wr = wb_instr[3:0];
-        id_wr_data = (wb_instr[15:12] != 4'hb ? wb_alu_out : wb_mem_out);
+        id_wr_data = (wb_instr[15:12] != 4'hb ? wb_alu_out : wb_mem_out_wire);
         id_wr_en = (wb_instr[15:12] != 4'hc && wb_instr[15:12] != 4'hd ? 1'b1 : 1'b0);
+
+        mem_rd_dest = mem_alu_out;
+        mem_wr_dest = mem_alu_out;
+        mem_wr_data = mem_r2_data;
+        mem_rd_en = 1'b0;
+        mem_wr_en = 1'b0;
+        if (mem_instr[15:12] == 4'hb) begin
+            mem_rd_en = 1'b1;
+        end else if (mem_instr[15:12] == 4'hc) begin
+            mem_wr_en = 1'b1;
+        end
+
         hc_mem_rd = (mem_instr[15:13] != 3'b110 ? mem_instr[3:0] : 4'd0);
         hc_wb_rd = (wb_instr[15:13] != 3'b110 ? wb_instr[3:0] : 4'd0);
 
@@ -148,6 +161,7 @@ module manta_style (
             mem_instr <= alu_ex_instr;
         end
         mem_alu_out <= ex_alu_out;
+        mem_r2_data <= ex_rs2_data;
         wb_instr <= mem_instr;
         wb_alu_out <= mem_alu_out;
     end

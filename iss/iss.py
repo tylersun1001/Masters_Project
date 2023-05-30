@@ -63,11 +63,11 @@ class iss():
     def srl_instr(self, r1: str, imm: str, rd: str):
         self.registers[int(rd, 16)] = self.registers[int(r1, 16)] >> int(imm, 16)
 
-    def lw(self, r1: str, imm: str, rd: str):
+    def lw_instr(self, r1: str, imm: str, rd: str):
         addr = (self.registers[int(r1, 16)] + int(imm, 16)) % 2**16
         self.registers[int(rd, 16)] = self.d_cache[addr]
 
-    def sw(self, r1: str, imm: str, r2: str):
+    def sw_instr(self, r1: str, imm: str, r2: str):
         addr = (self.registers[int(r1, 16)] + int(imm, 16)) % 2**16
         self.d_cache[addr] = self.registers[int(r2, 16)]
 
@@ -95,6 +95,10 @@ class iss():
             self.sll_instr(field2, field1, field0)
         elif opcode == "a":     #SRL
             self.srl_instr(field2, field1, field0)
+        elif opcode == "b":     #LW
+            self.lw_instr(field2, field1, field0)
+        elif opcode == "c":     #SW
+            self.sw_instr(field2, field1, field0)
 
     def record_state(self):
         for value in self.registers:

@@ -52,7 +52,7 @@ module alu (
             B = alu_instr[7:4];
         end
 
-        if (opcode == 4'h0 || opcode == 4'h6) begin
+        if (opcode == 4'h0 || opcode == 4'h6 || opcode == 4'hb || opcode == 4'hc) begin
             out = A + B;
         end else if (opcode == 4'h1) begin
             out = A - B;

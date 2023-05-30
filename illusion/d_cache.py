@@ -39,5 +39,5 @@ class DCache(Module):
         if self.in_dict["rd_en"] == "1":
             self.curr_out = self.data[rd_index]
         if (self.in_dict["wr_en"] == "1"):
-            self.registers[write_index] = self.in_dict["wr_data"]
+            self.data[wr_index] = self.in_dict["wr_data"]
 

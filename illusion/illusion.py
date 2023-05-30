@@ -40,6 +40,8 @@ class Illusion(Module):
         self.mem_alu_out = "0000"
         self.wb_alu_out = "0000"
 
+        self.mem_r2_data = "0000"
+
         self.comb_signals = {}
         self.update_comb_signals(self.comb_signals)
         
@@ -85,7 +87,7 @@ class Illusion(Module):
             elif (mem_opcode == "c"):
                 self.modules["dcache"].in_dict["wr_en"] = "1"
                 self.modules["dcache"].in_dict["wr_dest"] = self.mem_alu_out
-                self.modules["dcache"].in_dict["wr_data"] = self.mem_alu_out #FIXME: need to make this data@rs2.
+                self.modules["dcache"].in_dict["wr_data"] = self.mem_r2_data
 
             # WB
             # based on the instr, determine if alu_out, mem_out or nothing should be
@@ -103,11 +105,17 @@ class Illusion(Module):
             # Hazard Control
             self.modules["hc"].in_dict["id_instr"] = self.id_instr
             self.modules["hc"].in_dict["ex_rd"] = self.m1_instr[3]
+            if (self.m1_instr[0] in ["c", "d"]):
+                self.modules["hc"].in_dict["ex_rd"] = "0"
             self.modules["hc"].in_dict["m1_instr"] = self.m1_instr
             if (self.modules["alu"].out_dict["alu_status"] != "0" or self.m1_instr[0] == "5"):
                 self.modules["hc"].in_dict["ex_rd"] = self.modules["alu"].ex_instr[3]
             self.modules["hc"].in_dict["mem_rd"] = self.mem_instr[3]
+            if (self.mem_instr[0] in ["c", "d"]):
+                self.modules["hc"].in_dict["mem_rd"] = "0"
             self.modules["hc"].in_dict["wb_rd"] = self.wb_instr[3]
+            if (self.wb_instr[0] in ["c", "d"]):
+                self.modules["hc"].in_dict["wb_rd"] = "0"
             self.modules["hc"].in_dict["alu_status"] = self.modules["alu"].out_dict["alu_status"]
 
             # run calculate_combinational on all modules
@@ -131,8 +139,10 @@ class Illusion(Module):
         # implement mem stall if needed (prob not)
         self.mem_alu_out = self.modules["alu"].out_dict["out"]
         self.mem_instr = self.m1_instr
+        self.mem_r2_data = self.modules["alu"].in_dict["rs2_data"]
         if (self.modules["alu"].out_dict["alu_status"] != "0" or self.m1_instr[0] == "5"):
             self.mem_instr = self.modules["alu"].ex_instr
+            self.mem_r2_data = self.modules["alu"].ex_r2
         self.mem_pc = self.ex_pc
 
         # EX Stage
@@ -177,13 +187,13 @@ class Illusion(Module):
             self.outfile.write(signal_name + " " + self.comb_signals[signal_name] + "\n")
         self.outfile.write("\n")
         # if a retirement is about to occur, record that and the instr to be retired.
-        if (self.modules["rf"].in_dict["wr_en"] == "1"):
+        if (self.modules["rf"].in_dict["wr_en"] == "1" or self.wb_instr[0] == "c"):
             self.outfile.write("retirement\npc= " + self.wb_pc + " instr= " + self.wb_instr + "\n")
 
 def main():
     illusion = Illusion()
     # there needs to be end of test logic.  for now, just run 1000 cycles.
-    for i in range(1000):
+    for i in range(4000):
         illusion.calculate_combinational()
         illusion.record_state()
         illusion.update_state()

@@ -61,7 +61,7 @@ class ALU(Module):
             rs2_data = Converter.hex2int(instr[2])
         out_val = 0
 
-        if (opcode == "0" or opcode == "6"):        #ADD, ADDI
+        if (opcode == "0" or opcode == "6" or opcode == "b" or opcode == "c"):        #ADD, ADDI
             out_val = (rs1_data + rs2_data) % 2**16
         elif opcode == "1":                         #SUB
             out_val = (rs1_data - rs2_data) % 2**16
