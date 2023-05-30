@@ -101,8 +101,7 @@ class Illusion(Module):
                 self.modules["rf"].in_dict["wr_en"] = "0"
 
             # Hazard Control
-            self.modules["hc"].in_dict["id_rs1"] = self.id_instr[1]
-            self.modules["hc"].in_dict["id_rs2"] = self.id_instr[2]
+            self.modules["hc"].in_dict["id_instr"] = self.id_instr
             self.modules["hc"].in_dict["ex_rd"] = self.m1_instr[3]
             self.modules["hc"].in_dict["m1_instr"] = self.m1_instr
             if (self.modules["alu"].out_dict["alu_status"] != "0" or self.m1_instr[0] == "5"):
@@ -169,8 +168,8 @@ class Illusion(Module):
     # record the state in the outfile.  pc, i_id, and gprs, then all the signals
     # in modules dict.
     def record_state(self):
-        self.outfile.write("pc " + self.pc + "\n")
-        self.outfile.write("i_id " + self.i_id + "\n")
+        #self.outfile.write("pc " + self.pc + "\n")
+        #self.outfile.write("i_id " + self.i_id + "\n")
         for i in range(16):
             self.outfile.write("gpr " + self.modules["rf"].registers[i] + "\n")
 

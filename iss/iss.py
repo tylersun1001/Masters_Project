@@ -63,6 +63,14 @@ class iss():
     def srl_instr(self, r1: str, imm: str, rd: str):
         self.registers[int(rd, 16)] = self.registers[int(r1, 16)] >> int(imm, 16)
 
+    def lw(self, r1: str, imm: str, rd: str):
+        addr = (self.registers[int(r1, 16)] + int(imm, 16)) % 2**16
+        self.registers[int(rd, 16)] = self.d_cache[addr]
+
+    def sw(self, r1: str, imm: str, r2: str):
+        addr = (self.registers[int(r1, 16)] + int(imm, 16)) % 2**16
+        self.d_cache[addr] = self.registers[int(r2, 16)]
+
 
     def perform_instr(self, opcode: str, field2: str, field1: str, field0: str):
         if opcode == "0":       #ADD
