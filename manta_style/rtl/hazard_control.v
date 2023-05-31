@@ -27,6 +27,9 @@ module hazard_control(
             if_id_stall = 1'b1;
             id_ex_stall = 1'b1;
         end
+        if (id_instr[15:12] == 4'hd || id_instr[15:12] == 4'he ||id_instr[15:12] == 4'hf) begin
+            if_id_stall = 1'b1;
+        end
     end
 
 endmodule

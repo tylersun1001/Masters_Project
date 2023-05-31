@@ -76,4 +76,4 @@ def main(n: int = 100, outfile: str = "generated_test.txt"):
 
 
 if __name__ == "__main__":
-    main(n=500)
+    main(n=2500)
