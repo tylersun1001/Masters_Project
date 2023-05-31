@@ -34,9 +34,12 @@ class ALU(Module):
         self.in_dict["rs1_data"] = "0000"
         self.in_dict["rs2_data"] = "0000"
         self.in_dict["instr"] = "0000"
+        self.in_dict["pc"] = "0000"
 
         self.out_dict["out"] = "0000"
         self.out_dict["alu_status"] = "0"       # 2 bit value.  alu_status[1] signals if a mul is in m2.  [0] signals if a mul is in ex.
+        self.out_dict["br_taken"] = "0"
+        self.out_dict["br_target"] = "0000"
 
     def calculate_combinational(self):
         alu_status_int = 0
@@ -45,6 +48,7 @@ class ALU(Module):
         if (self.ex_instr != "0000"):
             alu_status_int += 1
         self.out_dict["alu_status"] = Converter.int2hex(alu_status_int)
+        self.out_dict["br_taken"] = "0"
 
         instr = self.in_dict["instr"]
         rs1_hex = self.in_dict["rs1_data"]
@@ -57,13 +61,14 @@ class ALU(Module):
         opcode = instr[0]
         rs1_data = Converter.hex2int(rs1_hex)
         rs2_data = Converter.hex2int(rs2_hex)
-        if (opcode in ["6", "7", "8", "9", "a", "b", "c", "d", "e", "f"]):
+        if (opcode in ["6", "7", "8", "9", "a", "b", "c", "e", "f"]):
             rs2_data = Converter.hex2int(instr[2])
         out_val = 0
+        br_target = 0
 
         if (opcode == "0" or opcode == "6" or opcode == "b" or opcode == "c"):        #ADD, ADDI
             out_val = (rs1_data + rs2_data) % 2**16
-        elif opcode == "1":                         #SUB
+        elif (opcode == "1"):                         #SUB
             out_val = (rs1_data - rs2_data) % 2**16
         elif (opcode == "2" or opcode == "7"):      #AND, ANDI
             out_val = rs1_data & rs2_data
@@ -80,8 +85,32 @@ class ALU(Module):
             if (product > (2**16 - 1)):
                 product = 2**16 - 1
             out_val = product
+        elif opcode == "d":
+            #out_val = (Converter.hex2int(self.in_dict["pc"]) + 1) % 2**16
+            offset = Converter.hex2int(instr[2])
+            if (offset > 7):
+                offset -= 16
+            br_target = (Converter.hex2int(self.in_dict["pc"]) + offset) % 2**16
+            if (rs1_data != rs2_data):
+                self.out_dict["br_taken"] = "1"
+        elif opcode == "e":
+            out_val = (Converter.hex2int(self.in_dict["pc"]) + 1) % 2**16
+            offset = 16 * Converter.hex2int(instr[1]) + Converter.hex2int(instr[2])
+            if (offset > 127):
+                offset -= 256
+            br_target = (Converter.hex2int(self.in_dict["pc"]) + offset) % 2**16
+            self.out_dict["br_taken"] = "1"
+        elif opcode == "f":
+            out_val = (Converter.hex2int(self.in_dict["pc"]) + 1) % 2**16
+            offset = Converter.hex2int(instr[2])
+            if (offset > 7):
+                offset -= 16
+            br_target = (rs1_data + offset) % 2**16 
+            self.out_dict["br_taken"] = "1"
         
         self.out_dict["out"] = Converter.int2hex(out_val, 4)
+        self.out_dict["br_target"] = Converter.int2hex(br_target)
+
 
     def update_state(self):
         opcode = self.in_dict["instr"][0]

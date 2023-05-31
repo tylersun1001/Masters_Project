@@ -14,7 +14,7 @@ from converter import Converter
 
 class Illusion(Module):
 
-    def __init__(self, program: str = "../testgen/generated_test.txt", filename: str="illusion_states.txt"):
+    def __init__(self, program: str = "../testgen/branch_test.txt", filename: str="illusion_states.txt"):
         self.outfile = open(filename, "w")
 
         self.modules = {}
@@ -56,9 +56,19 @@ class Illusion(Module):
             #update the in signals in the modules/propogate combinational signals
 
             # IF
+            if (self.modules["hc"].out_dict["if_id_stall"] == "0"):
+                self.pc = Converter.int2hex(Converter.hex2int(self.id_pc) + 1, 4)
+                if (self.modules["alu"].out_dict["br_taken"] == "1"):
+                    self.pc = self.modules["alu"].out_dict["br_target"]
+            else:
+                self.pc = self.id_pc
             self.modules["icache"].in_dict["rd_dest"] = self.pc
+            self.modules["icache"].in_dict["nop"] = "0"
+            if (self.modules["hc"].out_dict["if_id_stall"] == "1" and self.modules["hc"].out_dict["id_ex_stall"] == "0"):
+                self.modules["icache"].in_dict["nop"] = "1"
 
             # ID
+            self.id_instr = self.modules["icache"].out_dict["rd_out"]
             id_opcode = self.id_instr[0]
             rd1 = self.id_instr[1]
             if (id_opcode == "e"):
@@ -77,6 +87,7 @@ class Illusion(Module):
             self.modules["alu"].in_dict["rs1_data"] = self.modules["rf"].out_dict["rd_1_data"]
             self.modules["alu"].in_dict["rs2_data"] = self.modules["rf"].out_dict["rd_2_data"]
             self.modules["alu"].in_dict["instr"] = self.m1_instr
+            self.modules["alu"].in_dict["pc"] = self.ex_pc
 
             # MEM
             # based on the current instr, determine what inputs to dcache should be
@@ -155,14 +166,9 @@ class Illusion(Module):
         
 
         # ID Stage
-        if (self.modules["hc"].out_dict["if_id_stall"] == "0"):
-            # based on the instruction, feed rs1 and rs2 into rf
-            self.id_instr = self.modules["icache"].out_dict["rd_out"]
-            self.id_pc = self.pc
+        self.id_pc = self.pc
 
         # IF Stage
-        if (self.modules["hc"].out_dict["if_id_stall"] == "0"):
-            self.pc = Converter.int2hex(Converter.hex2int(self.pc) + 1, 4)
 
         for module_name in self.modules.keys():
             self.modules[module_name].update_state() 
@@ -187,12 +193,13 @@ class Illusion(Module):
             self.outfile.write(signal_name + " " + self.comb_signals[signal_name] + "\n")
         self.outfile.write("\n")
         # if a retirement is about to occur, record that and the instr to be retired.
-        if (self.modules["rf"].in_dict["wr_en"] == "1" or self.wb_instr[0] == "c"):
+        if (self.modules["rf"].in_dict["wr_en"] == "1" or self.wb_instr[0] in ["c", "d"]):
             self.outfile.write("retirement\npc= " + self.wb_pc + " instr= " + self.wb_instr + "\n")
 
 def main():
     illusion = Illusion()
     # there needs to be end of test logic.  for now, just run 1000 cycles.
+    illusion.update_state()
     for i in range(4000):
         illusion.calculate_combinational()
         illusion.record_state()

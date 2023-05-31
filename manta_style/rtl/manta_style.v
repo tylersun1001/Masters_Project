@@ -22,6 +22,8 @@ module manta_style (
     reg [15:0] ex_alu_out;
     reg [1:0]  alu_status;
     reg [15:0] alu_ex_instr;
+    reg        br_taken;
+    reg [15:0] br_target;
 
     // MEM
     reg [15:0] mem_instr;
@@ -55,6 +57,8 @@ module manta_style (
     wire [15:0] ex_alu_out_wire;
     wire [1:0] alu_status_wire;
     wire [15:0] alu_ex_instr_wire;
+    wire        br_taken_wire;
+    wire [15:0] br_target_wire;
     wire [15:0] wb_mem_out_wire;
     
 
@@ -73,6 +77,7 @@ module manta_style (
         .clk (clk),
         .rd_dest (pc),
         .rd_en (~if_id_stall),
+        .nop (if_id_stall == 1'b1 && id_ex_stall == 1'b0),
         .rd_out (id_instr_wire),
         .pc_out (id_pc_wire)
     );
@@ -93,9 +98,12 @@ module manta_style (
         .rs1_data (ex_rs1_data),
         .rs2_data (ex_rs2_data),
         .instr (ex_instr),
+        .pc (ex_pc),
         .out (ex_alu_out_wire),
         .alu_status (alu_status_wire),
-        .ex_instr_out (alu_ex_instr_wire)
+        .ex_instr_out (alu_ex_instr_wire),
+        .br_taken (br_taken_wire),
+        .br_target (br_target_wire)
     );
 
     d_cache dcache(
@@ -118,6 +126,17 @@ module manta_style (
         ex_alu_out = ex_alu_out_wire;
         alu_status = alu_status_wire;
         alu_ex_instr = alu_ex_instr_wire;
+        br_taken = br_taken_wire;
+        br_target = br_target_wire;
+
+        if (if_id_stall != 1'b1) begin
+            pc = id_pc + 1;
+            if (br_taken == 1'b1) begin
+                pc = br_target;
+            end
+        end else begin
+            pc = id_pc;
+        end
 
         id_rs1 = id_instr[11:8];
         id_rs2 = (id_instr[15:12] < 4'h6 ? id_instr[7:4] : (id_instr[15:13] == 3'b110 ? id_instr[3:0] : 4'd0));
@@ -147,9 +166,7 @@ module manta_style (
     end
 
     always @(posedge clk) begin
-        if (if_id_stall != 1'b1) begin
-            pc <= pc + 1;
-        end
+        ex_pc <= id_pc_wire;
         if (id_ex_stall != 1'b1) begin
             ex_instr <= id_instr;
         end else begin

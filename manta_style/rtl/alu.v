@@ -8,10 +8,13 @@ module alu (
     input [15:0]    rs1_data,
     input [15:0]    rs2_data,
     input [15:0]    instr,
+    input [15:0]    pc,
 
     output reg [15:0]   out,
     output [1:0]    alu_status,
-    output [15:0]   ex_instr_out
+    output [15:0]   ex_instr_out,
+    output reg      br_taken,
+    output reg [15:0]   br_target
 );
 
     reg [15:0] alu_instr;
@@ -51,8 +54,11 @@ module alu (
         if (opcode > 4'h5) begin
             B = alu_instr[7:4];
         end
+        
+        br_taken = 1'b0;
+        br_target = 16'd0;
 
-        if (opcode == 4'h0 || opcode == 4'h6 || opcode == 4'hb || opcode == 4'hc) begin
+        if (opcode == 4'h0 || opcode == 4'h6) begin
             out = A + B;
         end else if (opcode == 4'h1) begin
             out = A - B;
@@ -68,9 +74,21 @@ module alu (
             out = A >> B;
         end else if (opcode == 4'h5) begin
             out = mul_out;
-        end else begin
-            out = 16'hd074;
+        end else if (opcode == 4'hd) begin
+            out = 16'd0;
+            if (rs1_data != rs2_data)
+                br_taken = 1'b1;
+            br_target = pc + {{12{instr[7]}}, instr[7:4]};
+        end else if (opcode == 4'he) begin
+            out = pc + 16'd1;
+            br_taken = 1'b1;
+            br_target = pc + {{8{instr[11]}}, instr[11:4]};
+        end else if (opcode == 4'hf) begin
+            out = pc + 16'd1;
+            br_taken = 1'b1;
+            br_target = A + {{12{instr[7]}}, instr[7:4]};
         end
+
     end
 
 endmodule

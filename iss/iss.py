@@ -10,10 +10,11 @@ class iss():
         self.registers = [0] * 16
         self.pc = 0
         self.i_id = 0
+        self.eot = False
 
     def load_program(self):
         for instr in self.infile:
-            self.i_cache.append(instr)
+            self.i_cache.append(instr.strip())
 
     # takes register names as hex str
     def add_instr(self, r1: str, r2: str, rd: str):
@@ -69,7 +70,32 @@ class iss():
 
     def sw_instr(self, r1: str, imm: str, r2: str):
         addr = (self.registers[int(r1, 16)] + int(imm, 16)) % 2**16
+        if (addr == 53364 and addr == self.registers[int(r2, 16)]):
+            self.eot = True
         self.d_cache[addr] = self.registers[int(r2, 16)]
+
+    def bne_instr(self, r1: str, imm: str, r2: str):
+        if (self.registers[int(r1, 16)] != self.registers[int(r2, 16)]):
+            offset = int(imm, 16)
+            if (offset > 7):
+                offset = offset - 16
+            self.pc = self.pc + offset
+        else:
+            self.pc += 1
+
+    def jal_instr(self, imm1: str, imm2: str, rd: str):
+        self.registers[int(rd, 16)] = self.pc + 1
+        offset = (16 * int(imm1, 16) + int(imm2, 16))
+        if offset > 127:
+            offset -= 256
+        self.pc = (self.pc + offset) % 2**16
+    
+    def jalr_instr(self, r1: str, imm: str, rd: str):
+        self.registers[int(rd, 16)] = self.pc + 1
+        offset = int(imm, 16)
+        if (offset > 7):
+            offset = offset - 16
+        self.pc = (self.registers[int(r1, 16)] + offset) % 2**16
 
 
     def perform_instr(self, opcode: str, field2: str, field1: str, field0: str):
@@ -99,6 +125,12 @@ class iss():
             self.lw_instr(field2, field1, field0)
         elif opcode == "c":     #SW
             self.sw_instr(field2, field1, field0)
+        elif opcode == "d":     #SW
+            self.bne_instr(field2, field1, field0)
+        elif opcode == "e":     #SW
+            self.jal_instr(field2, field1, field0)
+        elif opcode == "f":     #SW
+            self.jalr_instr(field2, field1, field0)
 
     def record_state(self):
         for value in self.registers:
@@ -111,19 +143,20 @@ class iss():
         # HARDWIRE X0 to 0
         self.registers[0] = 0
         # print the instruction that was retired
-        self.outfile.write(curr_instr + str(self.pc) + "\n" + str(self.i_id) + "\n\n")
+        self.outfile.write(curr_instr + "\n" + str(self.pc) + "\n" + str(self.i_id) + "\n\n")
         self.record_state()
         self.outfile.write("\n")
         self.i_id += 1
-        self.pc += 1    # NEED TO ADJUST THIS TO ACCOUNT FOR JUMPS
+        if (opcode not in ["d", "e", "f"]):
+            self.pc += 1
 
     def not_done(self) -> bool:
         return self.pc < len(self.i_cache)
 
 def main():
-    simulator = iss("../testgen/generated_test.txt", "iss_states.txt")
+    simulator = iss("../testgen/branch_test.txt", "iss_states.txt")
     simulator.load_program()
-    while simulator.not_done():
+    while (not simulator.eot):
         simulator.step()
 
 if __name__ == "__main__":

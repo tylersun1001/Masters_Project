@@ -51,3 +51,5 @@ class HazardControl(Module):
         else:
             self.out_dict["if_id_stall"] = "0"
             self.out_dict["id_ex_stall"] = "0"
+        if (self.in_dict["id_instr"][0] in ["d", "e", "f"]):
+            self.out_dict["if_id_stall"] = "1"
