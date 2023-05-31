@@ -14,17 +14,26 @@ class testgen:
         random.seed(seed)
         self.f = open(outfile, "w")
 
-    def rand_instr(self):
+    def rand_arith_instr(self):
         field3 = format(random.randint(0, 10), '04b')  #opcode
-        #print(field3)
         field2 = format(random.randint(0, 15), '04b')
         field1 = format(random.randint(0, 15), '04b')
         field0 = format(random.randint(0, 15), '04b')
         
         bininstr = "0b" + field3 + field2 + field1 + field0
         hexinstr = format(int(bininstr, 2), '04x')
-        #print(bininstr)
-        #print(hexinstr)
+
+        self.f.write(hexinstr + "\n")
+
+    def rand_instr(self):
+        field3 = format(random.randint(0, 12), '04b')  #opcode
+        field2 = format(random.randint(0, 15), '04b')
+        field1 = format(random.randint(0, 15), '04b')
+        field0 = format(random.randint(0, 15), '04b')
+        
+        bininstr = "0b" + field3 + field2 + field1 + field0
+        hexinstr = format(int(bininstr, 2), '04x')
+
         self.f.write(hexinstr + "\n")
 
     # init every register as 0 through addi
@@ -67,4 +76,4 @@ def main(n: int = 100, outfile: str = "generated_test.txt"):
 
 
 if __name__ == "__main__":
-    main(n=250)
+    main(n=500)

@@ -20,8 +20,7 @@ class HazardControl(Module):
     def __init__(self):
         super().__init__()
 
-        self.in_dict["id_rs1"] = "0"
-        self.in_dict["id_rs2"] = "0"
+        self.in_dict["id_instr"] = "0000"
         self.in_dict["ex_rd"] = "0"
         self.in_dict["mem_rd"] = "0"
         self.in_dict["wb_rd"] = "0"
@@ -32,11 +31,21 @@ class HazardControl(Module):
         self.out_dict["id_ex_stall"] = "0"
 
     def calculate_combinational(self):
+        opcode = self.in_dict["id_instr"][0]
+        rs1 = "0"
+        if (opcode != "e"):
+            rs1 = self.in_dict["id_instr"][1]
+        rs2 = "0"
+        if (Converter.hex2int(opcode) < 6):
+            rs2 = self.in_dict["id_instr"][2]
+        elif (opcode == "c" or opcode == "d"):
+            rs2 = self.in_dict["id_instr"][3]
+
         if (Converter.hex2int(self.in_dict["alu_status"]) > 1 or self.in_dict["m1_instr"][0] == "5"):
             self.out_dict["if_id_stall"] = "1"
             self.out_dict["id_ex_stall"] = "1"
-        elif ((self.in_dict["id_rs1"] != "0" and self.in_dict["id_rs1"] in [self.in_dict["ex_rd"], self.in_dict["mem_rd"], self.in_dict["wb_rd"]])
-                or (self.in_dict["id_rs2"] != "0" and self.in_dict["id_rs2"] in [self.in_dict["ex_rd"], self.in_dict["mem_rd"], self.in_dict["wb_rd"]])):
+        elif ((rs1 != "0" and rs1 in [self.in_dict["ex_rd"], self.in_dict["mem_rd"], self.in_dict["wb_rd"]])
+                or (rs2 != "0" and rs2 in [self.in_dict["ex_rd"], self.in_dict["mem_rd"], self.in_dict["wb_rd"]])):
             self.out_dict["if_id_stall"] = "1"
             self.out_dict["id_ex_stall"] = "1"
         else:
