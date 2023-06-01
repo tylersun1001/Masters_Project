@@ -58,7 +58,7 @@ module alu (
         br_taken = 1'b0;
         br_target = 16'd0;
 
-        if (opcode == 4'h0 || opcode == 4'h6) begin
+        if (opcode == 4'h0 || opcode == 4'h6 || opcode == 4'hb || opcode == 4'hc) begin
             out = A + B;
         end else if (opcode == 4'h1) begin
             out = A - B;

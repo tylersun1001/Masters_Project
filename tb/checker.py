@@ -46,7 +46,6 @@ class Checker():
                     if iss_state[signal_name] != illu_state[signal_name]:
                         print("iss " + signal_name + ": " + str(iss_state[signal_name]))
                         print("illusion " + signal_name + ": " + str(illu_state[signal_name]))
-                        print("counter: " + str(counter))
                 print("At: instr={}, pc={}".format(iss_state["instr"], "temp"))
                 if (abort):
                     exit()
@@ -71,7 +70,6 @@ class Checker():
                     if illu_state[signal_name] != manta_state[signal_name]:
                         print("illusion " + signal_name + ": " + str(illu_state[signal_name]))
                         print("manta " + signal_name + ": " + str(manta_state[signal_name]))
-                        print("counter: " + str(counter))
                 print("At: instr={}, pc={}".format(illu_state["instr"], "temp"))
                 if (abort):
                     exit()
