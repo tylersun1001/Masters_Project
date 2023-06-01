@@ -16,6 +16,8 @@ class Illusion(Module):
 
     def __init__(self, program: str = "../testgen/branch_test.txt", filename: str="illusion_states.txt"):
         self.outfile = open(filename, "w")
+        self.eot_instr_in_mem = False
+        self.eot = False
 
         self.modules = {}
         self.modules["icache"] = ICache(program)
@@ -180,6 +182,9 @@ class Illusion(Module):
             for signal_name in module.out_dict.keys():
                 total_signal_name = module_name + "." + signal_name
                 signal_dict[total_signal_name] = module.out_dict[signal_name]
+            for signal_name in module.in_dict.keys():
+                total_signal_name = module_name + "." + signal_name
+                signal_dict[total_signal_name] = module.in_dict[signal_name]
 
     # record the state in the outfile.  pc, i_id, and gprs, then all the signals
     # in modules dict.
@@ -191,19 +196,35 @@ class Illusion(Module):
 
         for signal_name in self.comb_signals.keys():
             self.outfile.write(signal_name + " " + self.comb_signals[signal_name] + "\n")
+        # if end of test, write that.
+        if (self.eot):
+            self.outfile.write("End of Test\n")    
         self.outfile.write("\n")
+
         # if a retirement is about to occur, record that and the instr to be retired.
         if (self.modules["rf"].in_dict["wr_en"] == "1" or self.wb_instr[0] in ["c", "d"]):
             self.outfile.write("retirement\npc= " + self.wb_pc + " instr= " + self.wb_instr + "\n")
+        # if an end of test memory write is about to occur, record that.
+        if (self.modules["dcache"].in_dict["wr_en"] == "1" and self.modules["dcache"].in_dict["wr_data"] == "d074" and self.modules["dcache"].in_dict["wr_dest"] == "d074"):
+            self.eot_instr_in_mem = True
+
+    def set_eot(self, value: bool):
+        self.eot = value
 
 def main():
     illusion = Illusion()
     # there needs to be end of test logic.  for now, just run 1000 cycles.
     illusion.update_state()
-    for i in range(4000):
+    while (not illusion.eot_instr_in_mem):
         illusion.calculate_combinational()
         illusion.record_state()
         illusion.update_state()
+    illusion.calculate_combinational()
+    illusion.record_state()
+    illusion.update_state()
+    illusion.calculate_combinational()
+    illusion.set_eot(True)
+    illusion.record_state()
 
 if __name__ == "__main__":
     main()
