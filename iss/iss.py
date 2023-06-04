@@ -145,13 +145,13 @@ class iss():
         # print the instruction that was retired
         self.outfile.write(curr_instr + "\n" + str(self.pc) + "\n" + str(self.i_id) + "\n\n")
         self.record_state()
+        if (self.eot):
+            self.outfile.write("End of Test")
         self.outfile.write("\n")
         self.i_id += 1
         if (opcode not in ["d", "e", "f"]):
             self.pc += 1
 
-    def not_done(self) -> bool:
-        return self.pc < len(self.i_cache)
 
 def main():
     simulator = iss("../testgen/branch_test.txt", "iss_states.txt")

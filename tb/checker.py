@@ -25,38 +25,43 @@ class Checker():
         self.max_err_count = (2 ** 32) - 1
         if (max_err_count > 0):
             self.max_err_count = max_err_count
+        self.eot = {}
 
     def check_illu(self):
+        self.eot[self.iss] = False
+        self.eot[self.illu] = False
         self.strip_state(self.illu)
-        counter = 0
-        while (True):     #TEMP: use while true.  Change to end when iss_state has no more lines.
-            print(counter)
-            counter += 1
+        while ((not self.eot[self.iss]) and (not self.eot[self.illu])):     #TEMP: use while true.  Change to end when iss_state has no more lines.
             iss_fp = self.iss.tell()
             iss_state = self.parse_iss_state()
             illu_state = self.parse_state(self.illu)
             if iss_state != illu_state:
                 if (illu_state["instr"] == "0000"):
-                    counter -= 1
                     self.iss.seek(iss_fp)
+                    self.eot[self.iss] = False
+                    self.eot[self.illu] = False
                     continue
                 abort = self.error("mismatch between illusion and iss states")
                 for signal_name in iss_state:
                     if iss_state[signal_name] != illu_state[signal_name]:
                         print("iss " + signal_name + ": " + str(iss_state[signal_name]))
                         print("illusion " + signal_name + ": " + str(illu_state[signal_name]))
-                        print("counter: " + str(counter))
                 print("At: instr={}, pc={}".format(iss_state["instr"], "temp"))
                 if (abort):
                     exit()
+            else:
+                print("instruction retired successfully: " + iss_state["instr"])
+        if (self.eot[self.iss] != self.eot[self.illu]):
+            self.error("illusion and manta end of test mismatch")
+            print("iss eot: " + str(self.eot[self.iss]))
+            print("illusion eot: " + str(self.eot[self.illu]))
 
     def check_manta(self):
+        self.eot[self.illu] = False
+        self.eot[self.manta] = False
         self.strip_state(self.illu)
         self.strip_state(self.manta)
-        counter = 0
-        while (True):     #TEMP: use while true.  Change to end when iss_state has no more lines.
-            print(counter)
-            counter += 1
+        while ((not self.eot[self.illu]) and (not self.eot[self.manta])):     #TEMP: use while true.  Change to end when iss_state has no more lines.
             illu_state = self.parse_state(self.illu)
             manta_state = self.parse_state(self.manta)
             if illu_state != manta_state:
@@ -65,11 +70,16 @@ class Checker():
                     if illu_state[signal_name] != manta_state[signal_name]:
                         print("illusion " + signal_name + ": " + str(illu_state[signal_name]))
                         print("manta " + signal_name + ": " + str(manta_state[signal_name]))
-                        print("counter: " + str(counter))
                 print("At: instr={}, pc={}".format(illu_state["instr"], "temp"))
                 if (abort):
                     exit()
-
+            else:
+                print("instruction retired successfully: " + illu_state["instr"])
+        
+        if (self.eot[self.illu] != self.eot[self.manta]):
+            self.error("illusion and manta end of test mismatch")
+            print("illusion eot: " + str(self.eot[self.illu]))
+            print("manta eot: " + str(self.eot[self.manta]))
 
     def parse_iss_state(self) -> dict:
         data_dict = {}
@@ -80,7 +90,8 @@ class Checker():
         data_dict["gpr"] = [None] * 16
         for i in range(16):
             data_dict["gpr"][i] = self.iss.readline().strip()
-        self.iss.readline()
+        if (self.iss.readline() == "End of Test\n"):
+            self.eot[self.iss] = True
         return data_dict
 
     # parses the illu/manta file until the next retirement.
@@ -101,8 +112,14 @@ class Checker():
         data_dict["gpr"] = [None] * 16
         for i in range(16):
             data_dict["gpr"][i] =  fp.readline().strip().split()[1]
-        return data_dict
+        
+        curr_line =  fp.readline()
+        while (curr_line != "\n"):
+            if (curr_line == "End of Test\n"):
+                self.eot[fp] = True
+            curr_line =  fp.readline()
 
+        return data_dict
     # strips manta/illusion states of leading nops (initialization phase)
     def strip_state(self, fp):
         last_pos = fp.tell()

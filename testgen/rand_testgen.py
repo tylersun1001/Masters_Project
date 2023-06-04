@@ -68,6 +68,10 @@ class testgen:
             self.f.write(format(int("0b" + field3 + field2 + field1 + field0, 2), '04x') + "\n")
             field0 = format(int(field0, 2) + 1, '04b')
 
+    # Stores d074 to memory address d074.  This signifies end of test to checkers.
+    def end_of_test_sequence(self):
+        self.f.write("600f\n6fdf\n9f4f\n6f0f\n9f4f\n6f7f\n9f4f\n6f4f\ncf0f")
+
 def main(n: int = 100, outfile: str = "generated_test.txt"):
     testgenerator = testgen(outfile)
     testgenerator.init_sequence()

@@ -30,6 +30,8 @@ class IllusionTracker(vcd.VCDTracker):
         super().__init__()
         self.outfile = open(outfile_name, "w")
         self.watch_list = watch_list
+        self.eot_instr_in_mem = False
+        self.eot = False
 
     def start(self):
         pass
@@ -43,14 +45,24 @@ class IllusionTracker(vcd.VCDTracker):
             if ("manta_style_tb.DUT.gpr_" in signal_name):
                 signal_value = Converter.vlog_bin2hex(self[signal_name][1], 4)
                 self.outfile.write("gpr " + signal_value + "\n")
-        self.outfile.write("\n")
+        if (self.eot):
+            self.outfile.write("End of Test\n")
+        self.outfile.write("\n")    
 
         if (self["manta_style_tb.DUT.id_wr_en"] == "1" 
-            or Converter.vlog_bin2hex(self["manta_style_tb.DUT.wb_instr"][1], 4)[0] in ["c", "d", "e", "f"]):
+                or Converter.vlog_bin2hex(self["manta_style_tb.DUT.wb_instr"][1], 4)[0] in ["c", "d", "e", "f"]):
             self.outfile.write("retirement\n")
             pc = Converter.vlog_bin2hex(self["manta_style_tb.DUT.pc"][1], 4)
             wb_instr = Converter.vlog_bin2hex(self["manta_style_tb.DUT.wb_instr"][1], 4)
             self.outfile.write("pc= " + pc + " instr= " + wb_instr + "\n")
+
+        if (self.eot_instr_in_mem):
+            self.eot = True
+
+        if (self["manta_style_tb.DUT.mem_wr_en"] == "1" 
+                and Converter.vlog_bin2hex(self["manta_style_tb.DUT.mem_wr_data"][1], 4) == "d074"
+                and Converter.vlog_bin2hex(self["manta_style_tb.DUT.mem_wr_dest"][1], 4) == "d074"):
+            self.eot_instr_in_mem = True
 
 
 
@@ -64,6 +76,9 @@ class Parse_VCD():
         self.watch_list.append("manta_style_tb.DUT.id_wr_en")
         self.watch_list.append("manta_style_tb.DUT.pc")
         self.watch_list.append("manta_style_tb.DUT.wb_instr")
+        self.watch_list.append("manta_style_tb.DUT.mem_wr_data")
+        self.watch_list.append("manta_style_tb.DUT.mem_wr_dest")
+        self.watch_list.append("manta_style_tb.DUT.mem_wr_en")
 
         parser = vcd.VCDParser()
 
