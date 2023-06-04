@@ -26,10 +26,10 @@ class RisingClockWatcher(vcd.VCDWatcher):
 
 class IllusionTracker(vcd.VCDTracker):
 
-    def __init__(self, watch_list: list, outfile_name: str="./manta_states.txt"):
+    def __init__(self, signals: dict, outfile_name: str="./manta_states.txt"):
         super().__init__()
         self.outfile = open(outfile_name, "w")
-        self.watch_list = watch_list
+        self.signals = signals
         self.eot_instr_in_mem = False
         self.eot = False
 
@@ -41,53 +41,69 @@ class IllusionTracker(vcd.VCDTracker):
         #    gprstr = "manta_style_tb.DUT.gpr_" + str(i)
         #    self.outfile.write("gpr " + self[gprstr] + "\n")
 
-        for signal_name in self.watch_list:
+        for signal_name in self.signals:
             if ("manta_style_tb.DUT.gpr_" in signal_name):
-                signal_value = Converter.vlog_bin2hex(self[signal_name][1], 4)
+                signal_value = Converter.vlog_bin2hex(self[signal_name][1], self.signals[signal_name])
                 self.outfile.write("gpr " + signal_value + "\n")
+        for signal_name in self.signals:
+            if ("manta_style_tb.DUT.gpr_" not in signal_name):
+                if (self.signals[signal_name] == 1):
+                    signal_value = Converter.vlog_bin2hex(self[signal_name], self.signals[signal_name])
+                else:
+                    signal_value = Converter.vlog_bin2hex(self[signal_name][1], self.signals[signal_name])
+                self.outfile.write(signal_name[19:] + " " + signal_value + "\n")
+
         if (self.eot):
             self.outfile.write("End of Test\n")
         self.outfile.write("\n")    
 
         if (self["manta_style_tb.DUT.id_wr_en"] == "1" 
-                or Converter.vlog_bin2hex(self["manta_style_tb.DUT.wb_instr"][1], 4)[0] in ["c", "d", "e", "f"]):
+                or Converter.vlog_bin2hex(self["manta_style_tb.DUT.wb_instr"][1], 16)[0] in ["c", "d", "e", "f"]):
             self.outfile.write("retirement\n")
-            pc = Converter.vlog_bin2hex(self["manta_style_tb.DUT.pc"][1], 4)
-            wb_instr = Converter.vlog_bin2hex(self["manta_style_tb.DUT.wb_instr"][1], 4)
+            pc = Converter.vlog_bin2hex(self["manta_style_tb.DUT.pc"][1], 16)
+            wb_instr = Converter.vlog_bin2hex(self["manta_style_tb.DUT.wb_instr"][1], 16)
             self.outfile.write("pc= " + pc + " instr= " + wb_instr + "\n")
 
         if (self.eot_instr_in_mem):
             self.eot = True
 
         if (self["manta_style_tb.DUT.mem_wr_en"] == "1" 
-                and Converter.vlog_bin2hex(self["manta_style_tb.DUT.mem_wr_data"][1], 4) == "d074"
-                and Converter.vlog_bin2hex(self["manta_style_tb.DUT.mem_wr_dest"][1], 4) == "d074"):
+                and Converter.vlog_bin2hex(self["manta_style_tb.DUT.mem_wr_data"][1], 16) == "d074"
+                and Converter.vlog_bin2hex(self["manta_style_tb.DUT.mem_wr_dest"][1], 16) == "d074"):
             self.eot_instr_in_mem = True
 
 
 
 class Parse_VCD():
 
-    def main(self, vcd_filename: str="../manta_style/sim/sim_waveforms.vcd"):
-        self.watch_list = []
+    def main(self, vcd_filename: str="../manta_style/sim/sim_waveforms.vcd", signal_names_filename: str="./signal_names.txt"):
+        self.signals = {}
         #TEMP: manually make this list.  todo: read this from a file
         for i in range(16):
-            self.watch_list.append("manta_style_tb.DUT.gpr_" + str(i))
-        self.watch_list.append("manta_style_tb.DUT.id_wr_en")
-        self.watch_list.append("manta_style_tb.DUT.pc")
-        self.watch_list.append("manta_style_tb.DUT.wb_instr")
-        self.watch_list.append("manta_style_tb.DUT.mem_wr_data")
-        self.watch_list.append("manta_style_tb.DUT.mem_wr_dest")
-        self.watch_list.append("manta_style_tb.DUT.mem_wr_en")
+            self.signals["manta_style_tb.DUT.gpr_" + str(i)] = 16
+        self.signals["manta_style_tb.DUT.id_wr_en"] = 1
+        self.signals["manta_style_tb.DUT.pc"] = 16
+        self.signals["manta_style_tb.DUT.wb_instr"] = 16
+        self.signals["manta_style_tb.DUT.mem_wr_data"] = 16
+        self.signals["manta_style_tb.DUT.mem_wr_dest"] = 16
+        self.signals["manta_style_tb.DUT.mem_wr_en"] = 1
+
+        signal_names_fp = open(signal_names_filename, "r")
+        lines = signal_names_fp.readlines()
+        for line in lines:
+            signal_name = line.split()[0]
+            if (("manta_style_tb.DUT." + signal_name) not in self.signals.keys()):
+                self.signals["manta_style_tb.DUT." + signal_name] = int(line.split()[1])
+        signal_names_fp.close()
 
         parser = vcd.VCDParser()
 
-        tracker = IllusionTracker(self.watch_list)
+        tracker = IllusionTracker(self.signals)
 
         watcher = RisingClockWatcher(
             parser,
             sensitive=["manta_style_tb.DUT.clk"],
-            watch=self.watch_list,
+            watch=self.signals.keys(),
             trackers=[tracker]
         )
 

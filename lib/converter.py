@@ -14,8 +14,9 @@ class Converter():
         formatstr += 'x'
         return format(integer, formatstr)
 
-    # converts a verilog (1, 0, x, z) bitstring to hex.  out_len must be provided.
-    def vlog_bin2hex(vlog_bin_str: str, out_len: int) -> str:
+    # converts a verilog (1, 0, x, z) bitstring to hex.  bin_signal_len must be provided.
+    def vlog_bin2hex(vlog_bin_str: str, bin_signal_len: int) -> str:
+        out_len = (bin_signal_len // 4) + int(bin_signal_len % 4 != 0)
         formatstr = '0'
         formatstr += str(out_len)
         formatstr += 'x'

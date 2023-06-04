@@ -1,0 +1,4 @@
+id_instr 16
+mem_instr 16
+hc.if_id_stall 1
+hc.id_ex_stall 1
