@@ -138,9 +138,10 @@ class Checker():
 
 def main():
     checker = Checker(max_err_count=3)
-    #checker.check_illu()
-    #if (checker.err_count == 0):
-    checker.check_manta()
+    checker.check_illu()
+    if (checker.err_count == 0):
+        checker = Checker(max_err_count=3)
+        checker.check_manta()
 
 if (__name__ == "__main__"):
     main()
