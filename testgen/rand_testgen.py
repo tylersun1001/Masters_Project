@@ -71,6 +71,10 @@ class testgen:
             self.f.write(format(int("0b" + field3 + field2 + field1 + field0, 2), '04x') + "\n")
             field0 = format(int(field0, 2) + 1, '04b')
 
+    def nops(self, n: int):
+        for i in range(n):
+            self.f.write("0000\n")
+
     # creates a random block of code of length 80 to 128 instrs long.
     # repeatedly called to create the final program
     def random_code_block(self) -> str:
@@ -170,6 +174,7 @@ def main(n: int = 100, outfile: str = "generated_test.txt"):
     for i in range(n):
         testgenerator.write(testgenerator.random_code_block())
     testgenerator.end_of_test_sequence()
+    testgenerator.nops(10)
 
 
 if __name__ == "__main__":

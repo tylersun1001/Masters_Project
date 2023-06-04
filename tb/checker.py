@@ -26,6 +26,7 @@ class Checker():
         if (max_err_count > 0):
             self.max_err_count = max_err_count
         self.eot = {}
+        self.checked_signals = []
 
     def check_illu(self):
         self.eot[self.iss] = False
@@ -50,7 +51,7 @@ class Checker():
                 if (abort):
                     exit()
             else:
-                print("instruction retired successfully: " + iss_state["instr"])
+                print("iss-illu: instruction retired successfully: " + iss_state["instr"])
         if (self.eot[self.iss] != self.eot[self.illu]):
             self.error("illusion and manta end of test mismatch")
             print("iss eot: " + str(self.eot[self.iss]))
@@ -74,7 +75,7 @@ class Checker():
                 if (abort):
                     exit()
             else:
-                print("instruction retired successfully: " + illu_state["instr"])
+                print("illu-manta: instruction retired successfully: " + illu_state["instr"])
         
         if (self.eot[self.illu] != self.eot[self.manta]):
             self.error("illusion and manta end of test mismatch")
@@ -117,6 +118,8 @@ class Checker():
         while (curr_line != "\n"):
             if (curr_line == "End of Test\n"):
                 self.eot[fp] = True
+            if (curr_line.strip().split()[0] in self.checked_signals):
+                data_dict[curr_line.strip().split()[0]] = curr_line.strip().split()[1]
             curr_line =  fp.readline()
 
         return data_dict
@@ -128,6 +131,13 @@ class Checker():
             pass
         fp.seek(last_pos)
 
+    def read_signals_to_check(self, signal_names_filename: str="./signal_names.txt"):
+        signal_names_fp = open(signal_names_filename, "r")
+        lines = signal_names_fp.readlines()
+        for line in lines:
+            signal_name = line.split()[0]
+            self.checked_signals.append(signal_name)
+        signal_names_fp.close()
             
     def error(self, msg: str) -> bool:
         print("ERROR: " + msg)
@@ -141,6 +151,7 @@ def main():
     checker.check_illu()
     if (checker.err_count == 0):
         checker = Checker(max_err_count=3)
+        checker.read_signals_to_check()
         checker.check_manta()
 
 if (__name__ == "__main__"):

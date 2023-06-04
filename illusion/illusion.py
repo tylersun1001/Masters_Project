@@ -194,6 +194,10 @@ class Illusion(Module):
         for i in range(16):
             self.outfile.write("gpr " + self.modules["rf"].registers[i] + "\n")
 
+        for signal_name in self.__dict__:
+            if (signal_name not in ["outfile", "eot_instr_in_mem", "eot", "modules", "comb_signals", "comb_signals_new"]):
+                self.outfile.write(signal_name + " " + self.__dict__[signal_name] + "\n")
+
         for signal_name in self.comb_signals.keys():
             self.outfile.write(signal_name + " " + self.comb_signals[signal_name] + "\n")
         # if end of test, write that.
