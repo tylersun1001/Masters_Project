@@ -154,7 +154,7 @@ class iss():
 
 
 def main():
-    simulator = iss("../testgen/branch_test.txt", "iss_states.txt")
+    simulator = iss("../testgen/generated_test.txt", "iss_states.txt")
     simulator.load_program()
     while (not simulator.eot):
         simulator.step()

@@ -31,7 +31,7 @@ class Checker():
         self.eot[self.iss] = False
         self.eot[self.illu] = False
         self.strip_state(self.illu)
-        while ((not self.eot[self.iss]) and (not self.eot[self.illu])):     #TEMP: use while true.  Change to end when iss_state has no more lines.
+        while ((not self.eot[self.iss]) and (not self.eot[self.illu])): 
             iss_fp = self.iss.tell()
             iss_state = self.parse_iss_state()
             illu_state = self.parse_state(self.illu)
@@ -61,7 +61,7 @@ class Checker():
         self.eot[self.manta] = False
         self.strip_state(self.illu)
         self.strip_state(self.manta)
-        while ((not self.eot[self.illu]) and (not self.eot[self.manta])):     #TEMP: use while true.  Change to end when iss_state has no more lines.
+        while ((not self.eot[self.illu]) and (not self.eot[self.manta])): 
             illu_state = self.parse_state(self.illu)
             manta_state = self.parse_state(self.manta)
             if illu_state != manta_state:
@@ -84,8 +84,8 @@ class Checker():
     def parse_iss_state(self) -> dict:
         data_dict = {}
         data_dict["instr"] = self.iss.readline().strip()
-        self.iss.readline().strip()#data_dict["pc"] = iss.readline().strip()
-        self.iss.readline().strip()#data_dict["i_id"] = iss.readline().strip()
+        self.iss.readline().strip()
+        self.iss.readline().strip()
         self.iss.readline()
         data_dict["gpr"] = [None] * 16
         for i in range(16):
@@ -138,8 +138,9 @@ class Checker():
 
 def main():
     checker = Checker(max_err_count=3)
-    #checker.check_illu()
-    checker.check_manta()
+    checker.check_illu()
+    #if (checker.err_count == 0):
+    #checker.check_manta()
 
 if (__name__ == "__main__"):
     main()
