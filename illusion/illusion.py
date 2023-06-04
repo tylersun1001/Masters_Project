@@ -14,7 +14,7 @@ from converter import Converter
 
 class Illusion(Module):
 
-    def __init__(self, program: str = "../testgen/branch_test.txt", filename: str="illusion_states.txt"):
+    def __init__(self, program: str = "../testgen/generated_test.txt", filename: str="illusion_states.txt"):
         self.outfile = open(filename, "w")
         self.eot_instr_in_mem = False
         self.eot = False

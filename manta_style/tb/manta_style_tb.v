@@ -8,6 +8,7 @@ module manta_style_tb();
     );
 
     integer i;
+    reg eot_signal = 1'b0;
 
     initial begin
         clk = 1'b0;
@@ -32,7 +33,19 @@ module manta_style_tb();
             release DUT.rf.gpr[i];
         end
 
-        for (i = 0; i < 1000; i = i+1) begin
+        while (eot_signal == 1'b0) begin
+            #10;
+            clk = ~clk;
+            #10;
+            if (DUT.mem_wr_en == 1'b1 
+                && DUT.mem_wr_dest == 16'hd074
+                && DUT.mem_wr_data == 16'hd074) begin
+                eot_signal = 1'b1;
+            end
+            clk = ~clk;
+        end
+
+        for (i = 0; i < 5; i = i+1) begin
             #10;
             clk = ~clk;
             #10;

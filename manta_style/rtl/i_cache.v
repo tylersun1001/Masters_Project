@@ -1,5 +1,5 @@
 // The instruction cache module.  Contains 2 ** 16 lines of 16 bit words.
-module i_cache #(parameter testfile="../../testgen/branch_test.txt") (
+module i_cache #(parameter testfile="../../testgen/generated_test.txt") (
     input clk,
     input [15:0] rd_dest,
     input rd_en,
