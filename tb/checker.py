@@ -58,6 +58,8 @@ class Checker():
             self.error("illusion and manta end of test mismatch")
             print("iss eot: " + str(self.eot[self.iss]))
             print("illusion eot: " + str(self.eot[self.illu]))
+        else:
+            print("Illusion matches ISS.")
 
     def check_manta(self):
         self.eot[self.illu] = False
@@ -83,6 +85,8 @@ class Checker():
             self.error("illusion and manta end of test mismatch")
             print("illusion eot: " + str(self.eot[self.illu]))
             print("manta eot: " + str(self.eot[self.manta]))
+        else:
+            print("Manta matches Illusion.  Test finished at clk_count={}".format(self.manta_clk_count))
 
     def parse_iss_state(self) -> dict:
         data_dict = {}
