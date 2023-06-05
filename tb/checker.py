@@ -29,6 +29,7 @@ class Checker():
         self.checked_signals = []
         self.manta_clk_count = 0
         self.manta_sim_time = 0
+        self.iss_instrs_retired = 0
 
     def check_illu(self):
         self.eot[self.iss] = False
@@ -38,11 +39,13 @@ class Checker():
             iss_fp = self.iss.tell()
             iss_state = self.parse_iss_state()
             illu_state = self.parse_state(self.illu)
+            self.iss_instrs_retired += 1
             if iss_state != illu_state:
                 if (illu_state["instr"] == "0000"):
                     self.iss.seek(iss_fp)
                     self.eot[self.iss] = False
                     self.eot[self.illu] = False
+                    self.iss_instrs_retired -= 1
                     continue
                 abort = self.error("mismatch between illusion and iss states")
                 for signal_name in iss_state:
@@ -86,7 +89,7 @@ class Checker():
             print("illusion eot: " + str(self.eot[self.illu]))
             print("manta eot: " + str(self.eot[self.manta]))
         else:
-            print("Manta matches Illusion.  Test finished at clk_count={}".format(self.manta_clk_count))
+            print("Manta matches Illusion.  Test finished at clk_count={}.  Instrs retired={}".format(self.manta_clk_count, self.iss_instrs_retired))
 
     def parse_iss_state(self) -> dict:
         data_dict = {}
@@ -150,6 +153,11 @@ class Checker():
             signal_name = line.split()[0]
             self.checked_signals.append(signal_name)
         signal_names_fp.close()
+
+    def reset(self, max_err_count: int):
+        instrs_retired = self.iss_instrs_retired
+        self.__init__(max_err_count)
+        self.iss_instrs_retired = instrs_retired
             
     def error(self, msg: str) -> bool:
         print("ERROR: " + msg)
@@ -162,7 +170,7 @@ def main():
     checker = Checker(max_err_count=1)
     checker.check_illu()
     if (checker.err_count == 0):
-        checker = Checker(max_err_count=1)
+        checker.reset(max_err_count=1)
         checker.read_signals_to_check()
         checker.check_manta()
 
