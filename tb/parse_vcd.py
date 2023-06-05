@@ -53,7 +53,12 @@ class IllusionTracker(vcd.VCDTracker):
                     signal_value = Converter.vlog_bin2hex(self[signal_name], self.signals[signal_name])
                 else:
                     signal_value = Converter.vlog_bin2hex(self[signal_name][1], self.signals[signal_name])
-                self.outfile.write(signal_name[19:] + " " + signal_value + "\n")
+                    
+                if (signal_name != "manta_style_tb.clk_count"):
+                    self.outfile.write(signal_name[19:] + " " + signal_value + "\n")
+                else:
+                    self.outfile.write(signal_name[15:] + " " + signal_value + "\n")
+                    self.outfile.write("sim_time " + self.parser.now + "\n")
         
         self.store_det.insert(0, False)
         self.store_det.pop()
@@ -99,6 +104,7 @@ class Parse_VCD():
         self.signals["manta_style_tb.DUT.mem_wr_data"] = 16
         self.signals["manta_style_tb.DUT.mem_wr_dest"] = 16
         self.signals["manta_style_tb.DUT.mem_wr_en"] = 1
+        self.signals["manta_style_tb.clk_count"] = 32
 
         signal_names_fp = open(signal_names_filename, "r")
         lines = signal_names_fp.readlines()

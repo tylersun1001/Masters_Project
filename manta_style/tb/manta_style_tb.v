@@ -8,6 +8,8 @@ module manta_style_tb();
     );
 
     integer i;
+    integer clk_count_int;
+    reg [31:0] clk_count;
     reg eot_signal = 1'b0;
 
     initial begin
@@ -25,6 +27,7 @@ module manta_style_tb();
                 release DUT.pc;
         end
         release DUT.id_instr_wire;
+        clk_count_int = 0;
 
         for (i = 0; i < 16; i = i+1) begin
             force DUT.rf.gpr[i] = 16'd0;
@@ -51,5 +54,11 @@ module manta_style_tb();
             #10;
             clk = ~clk;
         end
+    end
+    always @(posedge clk) begin
+        clk_count_int <= clk_count_int + 1;
+    end
+    always @(*) begin
+        clk_count = clk_count_int;
     end
 endmodule
