@@ -178,4 +178,4 @@ def main(n: int = 100, outfile: str = "generated_test.txt"):
 
 
 if __name__ == "__main__":
-    main(n=32)
+    main(n=64)

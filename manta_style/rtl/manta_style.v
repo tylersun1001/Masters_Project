@@ -17,6 +17,10 @@ module manta_style (
     // EX
     reg [15:0] ex_instr;
     reg [15:0] ex_pc;
+    reg [15:0] ex_fwd_r1_data;
+    reg        ex_fwd_r1_en;
+    reg [15:0] ex_fwd_r2_data;
+    reg        ex_fwd_r2_en;
     reg [15:0] ex_rs1_data;
     reg [15:0] ex_rs2_data;
     reg [15:0] ex_alu_out;
@@ -60,6 +64,10 @@ module manta_style (
     wire        br_taken_wire;
     wire [15:0] br_target_wire;
     wire [15:0] wb_mem_out_wire;
+    wire [15:0] fwd_r1_data_wire;
+    wire        fwd_r1_en_wire;
+    wire [15:0] fwd_r2_data_wire;
+    wire        fwd_r2_en_wire;
     
 
     hazard_control hc(
@@ -69,8 +77,25 @@ module manta_style (
         .wb_rd (hc_wb_rd),
         .alu_status (alu_status),
         .m1_opcode (ex_instr[15:12]),       // TODO: remove if possible
+        .fwd_r1_en (fwd_r1_en_wire),
+        .fwd_r2_en (fwd_r2_en_wire),
         .if_id_stall (if_id_stall_wire),
         .id_ex_stall (id_ex_stall_wire)
+    );
+
+    forward_control fc(
+        .id_instr (id_instr),
+        .ex_instr ((alu_status == 2'b00 && ex_instr[15:12] != 4'h5) ? ex_instr : alu_ex_instr),
+        .mem_instr (mem_instr),
+        .wb_dest (id_wr),
+        .wb_en (id_wr_en),
+        .ex_data (ex_alu_out_wire),
+        .mem_data (mem_alu_out),
+        .wb_data (id_wr_data),
+        .fwd_r1_data (fwd_r1_data_wire),
+        .fwd_r1_en (fwd_r1_en_wire),
+        .fwd_r2_data (fwd_r2_data_wire),
+        .fwd_r2_en (fwd_r2_en_wire)
     );
 
     i_cache icache(
@@ -145,6 +170,13 @@ module manta_style (
         id_wr_data = (wb_instr[15:12] != 4'hb ? wb_alu_out : wb_mem_out_wire);
         id_wr_en = (wb_instr[15:12] != 4'hc && wb_instr[15:12] != 4'hd ? 1'b1 : 1'b0);
 
+        if (ex_fwd_r1_en == 1'b1) begin
+            ex_rs1_data = ex_fwd_r1_data;
+        end
+        if (ex_fwd_r2_en == 1'b1) begin
+            ex_rs2_data = ex_fwd_r2_data;
+        end
+
         mem_rd_dest = mem_alu_out;
         mem_wr_dest = mem_alu_out;
         mem_wr_data = mem_r2_data;
@@ -172,6 +204,11 @@ module manta_style (
         end else begin
             ex_instr <= 4'h0;
         end
+        ex_fwd_r1_data = fwd_r1_data_wire;
+        ex_fwd_r1_en = fwd_r1_en_wire;
+        ex_fwd_r2_data = fwd_r2_data_wire;
+        ex_fwd_r2_en = fwd_r2_en_wire;
+
         if (alu_status == 2'b00 && ex_instr[15:12] != 4'h5) begin
             mem_instr <= ex_instr;
         end else begin
