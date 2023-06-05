@@ -9,6 +9,7 @@ from register_file import RegisterFile
 from alu import ALU
 from d_cache import DCache
 from hazard_control import HazardControl
+from forward_control import ForwardControl
 
 from converter import Converter
 
@@ -25,6 +26,11 @@ class Illusion(Module):
         self.modules["alu"] = ALU()
         self.modules["dcache"] = DCache()
         self.modules["hc"] = HazardControl()
+        self.modules["fc"] = ForwardControl()
+        self.illu_only = {}
+        self.illu_only["wb_store_packet"] = ["0", "0000", "0000"] # en, dest, data
+        self.illu_only["retire_store_packet"] = ["0", "0000", "0000"]
+
         #Program counter will be implemented in this top level module.
 
         self.pc = "0000"
@@ -43,6 +49,11 @@ class Illusion(Module):
         self.wb_alu_out = "0000"
 
         self.mem_r2_data = "0000"
+
+        self.fwd_r1 = "0000"
+        self.fwd_r1_en = "0"
+        self.fwd_r2 = "0000"
+        self.fwd_r2_en = "0"
 
         self.comb_signals = {}
         self.update_comb_signals(self.comb_signals)
@@ -87,13 +98,18 @@ class Illusion(Module):
 
             # EX
             self.modules["alu"].in_dict["rs1_data"] = self.modules["rf"].out_dict["rd_1_data"]
+            if (self.fwd_r1_en == "1"):
+                self.modules["alu"].in_dict["rs1_data"] = self.fwd_r1
             self.modules["alu"].in_dict["rs2_data"] = self.modules["rf"].out_dict["rd_2_data"]
+            if (self.fwd_r2_en == "1"):
+                self.modules["alu"].in_dict["rs2_data"] = self.fwd_r2
             self.modules["alu"].in_dict["instr"] = self.m1_instr
             self.modules["alu"].in_dict["pc"] = self.ex_pc
 
             # MEM
             # based on the current instr, determine what inputs to dcache should be
             mem_opcode = self.mem_instr[0]
+            self.modules["dcache"].in_dict["wr_en"] = "0"
             if (mem_opcode == "b"):
                 self.modules["dcache"].in_dict["rd_en"] = "1"
                 self.modules["dcache"].in_dict["rd_dest"] = self.mem_alu_out
@@ -130,6 +146,20 @@ class Illusion(Module):
             if (self.wb_instr[0] in ["c", "d"]):
                 self.modules["hc"].in_dict["wb_rd"] = "0"
             self.modules["hc"].in_dict["alu_status"] = self.modules["alu"].out_dict["alu_status"]
+            self.modules["hc"].in_dict["fwd_r1_en"] = self.modules["fc"].out_dict["fwd_r1_en"]
+            self.modules["hc"].in_dict["fwd_r2_en"] = self.modules["fc"].out_dict["fwd_r2_en"]
+
+            # Forward Control
+            self.modules["fc"].in_dict["id_instr"] = self.id_instr
+            self.modules["fc"].in_dict["ex_instr"] = self.m1_instr
+            if (self.modules["alu"].out_dict["alu_status"] != "0" or self.m1_instr[0] == "5"):
+                self.modules["fc"].in_dict["ex_instr"] = self.modules["alu"].ex_instr
+            self.modules["fc"].in_dict["mem_instr"] = self.mem_instr
+            self.modules["fc"].in_dict["wb_dest"] = self.modules["rf"].in_dict["wr"]
+            self.modules["fc"].in_dict["wb_en"] = self.modules["rf"].in_dict["wr_en"]
+            self.modules["fc"].in_dict["ex_data"] = self.modules["alu"].out_dict["out"]
+            self.modules["fc"].in_dict["mem_data"] = self.mem_alu_out
+            self.modules["fc"].in_dict["wb_data"] = self.modules["rf"].in_dict["wr_data"]          
 
             # run calculate_combinational on all modules
             for module_name in self.modules.keys():
@@ -147,6 +177,10 @@ class Illusion(Module):
         self.wb_instr = self.mem_instr
         self.wb_alu_out = self.mem_alu_out
         self.wb_pc = self.mem_pc
+        self.illu_only["retire_store_packet"] = self.illu_only["wb_store_packet"]
+        self.illu_only["wb_store_packet"] = [self.modules["dcache"].in_dict["wr_en"], 
+                                             self.modules["dcache"].in_dict["wr_dest"], 
+                                             self.modules["dcache"].in_dict["wr_data"]]
 
         # MEM Stage
         # implement mem stall if needed (prob not)
@@ -169,6 +203,11 @@ class Illusion(Module):
 
         # ID Stage
         self.id_pc = self.pc
+
+        self.fwd_r1 = self.modules["fc"].out_dict["fwd_r1_data"]
+        self.fwd_r1_en = self.modules["fc"].out_dict["fwd_r1_en"]
+        self.fwd_r2 = self.modules["fc"].out_dict["fwd_r2_data"]
+        self.fwd_r2_en = self.modules["fc"].out_dict["fwd_r2_en"]
 
         # IF Stage
 
@@ -195,11 +234,13 @@ class Illusion(Module):
             self.outfile.write("gpr " + self.modules["rf"].registers[i] + "\n")
 
         for signal_name in self.__dict__:
-            if (signal_name not in ["outfile", "eot_instr_in_mem", "eot", "modules", "comb_signals", "comb_signals_new"]):
+            if (signal_name not in ["outfile", "eot_instr_in_mem", "eot", "modules", "comb_signals", "comb_signals_new", "illu_only"]):
                 self.outfile.write(signal_name + " " + self.__dict__[signal_name] + "\n")
 
         for signal_name in self.comb_signals.keys():
             self.outfile.write(signal_name + " " + self.comb_signals[signal_name] + "\n")
+        if (self.illu_only["retire_store_packet"][0] == "1"):
+            self.outfile.write("store " + self.illu_only["retire_store_packet"][1] + "<=" + self.illu_only["retire_store_packet"][2] + "\n")
         # if end of test, write that.
         if (self.eot):
             self.outfile.write("End of Test\n")    

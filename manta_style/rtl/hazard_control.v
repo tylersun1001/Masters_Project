@@ -6,6 +6,8 @@ module hazard_control(
     input [3:0]    wb_rd,
     input [1:0]    alu_status,
     input [3:0]    m1_opcode,   //TODO: i think this is unnecessary
+    input          fwd_r1_en,
+    input          fwd_r2_en,
 
     output reg if_id_stall,
     output reg id_ex_stall
@@ -23,7 +25,7 @@ module hazard_control(
         if (alu_status > 2'b01 || m1_opcode == 4'h5) begin
             if_id_stall = 1'b1;
             id_ex_stall = 1'b1;
-        end else if (rs1_hazard || rs2_hazard) begin
+        end else if ((rs1_hazard && fwd_r1_en == 1'b0) || (rs2_hazard && fwd_r2_en == 1'b0)) begin
             if_id_stall = 1'b1;
             id_ex_stall = 1'b1;
         end

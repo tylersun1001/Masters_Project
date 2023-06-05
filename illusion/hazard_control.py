@@ -26,6 +26,8 @@ class HazardControl(Module):
         self.in_dict["wb_rd"] = "0"
         self.in_dict["alu_status"] = "0"
         self.in_dict["m1_instr"] = "0000"
+        self.in_dict["fwd_r1_en"] = "0"
+        self.in_dict["fwd_r2_en"] = "0"
 
         self.out_dict["if_id_stall"] = "0"
         self.out_dict["id_ex_stall"] = "0"
@@ -44,8 +46,12 @@ class HazardControl(Module):
         if (Converter.hex2int(self.in_dict["alu_status"]) > 1 or self.in_dict["m1_instr"][0] == "5"):
             self.out_dict["if_id_stall"] = "1"
             self.out_dict["id_ex_stall"] = "1"
-        elif ((rs1 != "0" and rs1 in [self.in_dict["ex_rd"], self.in_dict["mem_rd"], self.in_dict["wb_rd"]])
-                or (rs2 != "0" and rs2 in [self.in_dict["ex_rd"], self.in_dict["mem_rd"], self.in_dict["wb_rd"]])):
+        elif (rs1 != "0" and rs1 in [self.in_dict["ex_rd"], self.in_dict["mem_rd"], self.in_dict["wb_rd"]]
+              and self.in_dict["fwd_r1_en"] == "0"):
+            self.out_dict["if_id_stall"] = "1"
+            self.out_dict["id_ex_stall"] = "1"
+        elif (rs2 != "0" and rs2 in [self.in_dict["ex_rd"], self.in_dict["mem_rd"], self.in_dict["wb_rd"]]
+              and self.in_dict["fwd_r2_en"] == "0"):
             self.out_dict["if_id_stall"] = "1"
             self.out_dict["id_ex_stall"] = "1"
         else:
