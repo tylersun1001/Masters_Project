@@ -32,6 +32,8 @@ class IllusionTracker(vcd.VCDTracker):
         self.signals = signals
         self.eot_instr_in_mem = False
         self.eot = False
+        self.store_det = [False] * 3
+        self.store_str = [""] * 3
 
     def start(self):
         pass
@@ -51,11 +53,22 @@ class IllusionTracker(vcd.VCDTracker):
                     signal_value = Converter.vlog_bin2hex(self[signal_name], self.signals[signal_name])
                 else:
                     signal_value = Converter.vlog_bin2hex(self[signal_name][1], self.signals[signal_name])
+                    
                 if (signal_name != "manta_style_tb.clk_count"):
                     self.outfile.write(signal_name[19:] + " " + signal_value + "\n")
                 else:
                     self.outfile.write(signal_name[15:] + " " + signal_value + "\n")
                     self.outfile.write("sim_time " + self.parser.now + "\n")
+        
+        self.store_det.insert(0, False)
+        self.store_det.pop()
+        self.store_str.insert(0, "")
+        self.store_str.pop()
+        if (self["manta_style_tb.DUT.mem_wr_en"] == "1"):
+            self.store_det[0] = True
+            self.store_str[0] = "store " + Converter.vlog_bin2hex(self["manta_style_tb.DUT.mem_wr_dest"][1], 16) + "<=" + Converter.vlog_bin2hex(self["manta_style_tb.DUT.mem_wr_data"][1], 16) + "\n"
+        if (self.store_det[2]):
+            self.outfile.write(self.store_str[2])
 
         if (self.eot):
             self.outfile.write("End of Test\n")

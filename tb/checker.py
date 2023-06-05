@@ -89,10 +89,12 @@ class Checker():
         data_dict["instr"] = self.iss.readline().strip()
         self.iss.readline().strip()
         self.iss.readline().strip()
-        self.iss.readline()
         data_dict["gpr"] = [None] * 16
         for i in range(16):
             data_dict["gpr"][i] = self.iss.readline().strip()
+        store_line = self.iss.readline()
+        if (store_line != "\n"):
+            data_dict["store"] = store_line.strip().split()[1]
         if (self.iss.readline() == "End of Test\n"):
             self.eot[self.iss] = True
         return data_dict
@@ -120,7 +122,7 @@ class Checker():
         while (curr_line != "\n"):
             if (curr_line == "End of Test\n"):
                 self.eot[fp] = True
-            if (curr_line.strip().split()[0] in self.checked_signals):
+            if (curr_line.strip().split()[0] in self.checked_signals or curr_line.strip().split()[0] == "store"):
                 data_dict[curr_line.strip().split()[0]] = curr_line.strip().split()[1]
             elif (curr_line.strip().split()[0] == "clk_count"):
                 self.manta_clk_count = curr_line.strip().split()[1]
@@ -153,10 +155,10 @@ class Checker():
         return False
 
 def main():
-    checker = Checker(max_err_count=3)
+    checker = Checker(max_err_count=1)
     checker.check_illu()
     if (checker.err_count == 0):
-        checker = Checker(max_err_count=3)
+        checker = Checker(max_err_count=1)
         checker.read_signals_to_check()
         checker.check_manta()
 
