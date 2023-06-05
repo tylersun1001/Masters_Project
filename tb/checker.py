@@ -27,6 +27,8 @@ class Checker():
             self.max_err_count = max_err_count
         self.eot = {}
         self.checked_signals = []
+        self.manta_clk_count = 0
+        self.manta_sim_time = 0
 
     def check_illu(self):
         self.eot[self.iss] = False
@@ -71,7 +73,7 @@ class Checker():
                     if illu_state[signal_name] != manta_state[signal_name]:
                         print("illusion " + signal_name + ": " + str(illu_state[signal_name]))
                         print("manta " + signal_name + ": " + str(manta_state[signal_name]))
-                print("At: instr={}, pc={}".format(illu_state["instr"], "temp"))
+                print("At: instr={}, pc={}, clk_count={} @sim_time={}".format(illu_state["instr"], "temp", self.manta_clk_count, self.manta_sim_time))
                 if (abort):
                     exit()
             else:
@@ -120,6 +122,10 @@ class Checker():
                 self.eot[fp] = True
             if (curr_line.strip().split()[0] in self.checked_signals):
                 data_dict[curr_line.strip().split()[0]] = curr_line.strip().split()[1]
+            elif (curr_line.strip().split()[0] == "clk_count"):
+                self.manta_clk_count = curr_line.strip().split()[1]
+            elif (curr_line.strip().split()[0] == "sim_time"):
+                self.manta_sim_time = curr_line.strip().split()[1]
             curr_line =  fp.readline()
 
         return data_dict
