@@ -78,7 +78,7 @@ class Checker():
                     if illu_state[signal_name] != manta_state[signal_name]:
                         print("illusion " + signal_name + ": " + str(illu_state[signal_name]))
                         print("manta " + signal_name + ": " + str(manta_state[signal_name]))
-                print("At: instr={}, pc={}, clk_count={} @sim_time={}".format(illu_state["instr"], "temp", self.manta_clk_count, self.manta_sim_time))
+                print("At: instr={}, pc={}, clk_count={} @sim_time={}".format(illu_state["instr"], illu_state["pc"], self.manta_clk_count, self.manta_sim_time))
                 if (abort):
                     exit()
             else:

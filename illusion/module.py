@@ -10,7 +10,7 @@ class Module():
 
     # calculates the output dictionary based on the input dictionary.
     def calculate_combinational(self):
-        self.out_dict = self.out_dict
+        pass
 
     # updates the internal state of the module.
     # should only be called once a clock cycle.
